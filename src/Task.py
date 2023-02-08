@@ -1,5 +1,5 @@
 import inspect, hashlib
-from log import debug, warn
+from Logger import log, warn
 
 class Task:
 
@@ -82,7 +82,7 @@ class Task:
 
     def run(self):
 
-        debug(f"Running {self}")
+        log(f"Running {self}")
 
         if self.indepedent:
             self.result = self.user_function(*self.args, **self.kwargs)            

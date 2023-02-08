@@ -1,5 +1,6 @@
 import pickle, os
-from log import debug, error
+from tabulate import tabulate
+from Logger import log, error
 
 CACHE_PATH = "./temp"
 
@@ -7,6 +8,19 @@ class Cache:
 
     def __init__(self, path):
         self.setPath(path)
+        self.table = []
+        self.headers = [
+            "Task",
+            "File size (bytes)",
+            "File name in cache"
+        ]
+
+    def writeCacheInfo(self):
+
+        with open(self.info_file, "w") as info:
+            info.write(f"\nCache location: {self.path}\n\n")
+            info.write(tabulate(self.table, headers=self.headers))
+            info.write("\n")
 
 
     def exists(self, task):
@@ -23,11 +37,10 @@ class Cache:
         # if we have a previous result, serve that up
         try:
             with open(cache_fname, 'rb') as f:
-                debug(f"Found cache result for {cache_fname}")
+                log(f"Found cache result for {cache_fname}")
                 result = pickle.load(f)
         except FileNotFoundError as e:
-            debug(f"No cache result found for {cache_fname}")
-            raise 
+            error(f"No cache result found for {cache_fname}")
         else:
             task.result = result
 
@@ -39,7 +52,14 @@ class Cache:
         with open(cache_fname, 'wb') as f:
             pickle.dump(task.result, f, protocol=0)
 
-        debug(f"Saved result of {task} to {cache_fname}")
+        file_size = os.stat(cache_fname).st_size
+        self.table.append([
+            str(task),
+            file_size,
+            os.path.basename(cache_fname)
+        ])
+        self.writeCacheInfo()
+        log(f"Saved result of {task} to {cache_fname}")
 
 
     def remove(self, task):
@@ -55,6 +75,13 @@ class Cache:
         self.path = os.path.abspath(new_path)
         if not os.path.exists(self.path):
                 os.mkdir(self.path)
+
+        self.info_file = os.path.join(self.path, "cache_info")
+        if not os.path.isfile(self.info_file):
+            with open(self.info_file, 'a'):  # Create file if does not exist
+                pass
+
+  
 
     
 

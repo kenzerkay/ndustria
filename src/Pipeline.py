@@ -3,7 +3,8 @@ from Task import Task
 from Cache import Cache
 from View import View
 
-from log import debug, error
+import os
+from Logger import log, error, setLogFile
 
 class Pipeline:
 
@@ -15,7 +16,9 @@ class Pipeline:
             cls.instance = super(Pipeline, cls).__new__(cls)
             
             cls.instance.cache = Cache("./temp")
-            debug(f"Created new Pipeline with cache located at {cls.instance.cache.path}")
+            log_file = os.path.join(cls.instance.cache.path, "pipe.out")
+            setLogFile(log_file)
+            log(f"Created new Pipeline with cache located at {cls.instance.cache.path}")
 
         return cls.instance
 
@@ -46,9 +49,9 @@ class Pipeline:
         self.Tasks.append(new_task)
 
         if new_task.done:
-            debug(f"Task {new_task} will be skipped")
+            log(f"Task {new_task} will be skipped")
         else:
-            debug(f"Added new Task: {new_task}")
+            log(f"Added new Task: {new_task}")
 
     def addView(self, 
         user_function, 
@@ -70,7 +73,7 @@ class Pipeline:
             old_task)
         self.Views.append(new_view)
 
-        debug(f"Added new View: {new_view}")
+        log(f"Added new View: {new_view}")
 
 
     # First and default Dependency strategy
@@ -114,7 +117,7 @@ class Pipeline:
 
 
 
-        debug(f"Finished all tasks after {iterations} iterations")
+        log(f"Finished all tasks after {iterations} iterations")
 
         run_this_iteration = []
         waiting = [view for view in pipe.Views]
@@ -129,5 +132,5 @@ class Pipeline:
 
             waiting = [view for view in pipe.Views if not view.shown]
 
-        print("All done.")
+        log("All done.")
           
