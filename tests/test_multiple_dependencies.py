@@ -34,21 +34,31 @@ def do_std(data):
     }
     return result
 
-@AddView(task=do_sum)
-def view_data(data):
+@AddView(views=[do_sum, do_mean, do_std])
+def view_data(dataDict):
+
+    sum_data = dataDict["do_sum"]
+    mean_data = dataDict["do_mean"]
+    std_data = dataDict["do_std"]
+
     print(f"""
-Viewing data for {data['length']} random numbers: 
-        Sum     : {data['sum']}
+Viewing data for {sum_data['length']} random numbers: 
+        Sum     : {sum_data['sum']}
+        Mean    : {mean_data['mean']}
+        Std dev : {std_data['std']}
 """)
 
+Pipeline.clearCache()
 
 for i in range(5, 8):
     N = 10**i
     create_random_array(N=N)
     do_sum()
+    do_mean()
+    do_std()
     view_data()
 
-Pipeline.clearCache()
+
 Pipeline.run()
 Pipeline.printCacheInfo()
 Pipeline.printLog()

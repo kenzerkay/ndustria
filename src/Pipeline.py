@@ -16,8 +16,8 @@ class Pipeline:
             cls.instance = super(Pipeline, cls).__new__(cls)
             
             cls.instance.cache = Cache("./temp")
-            log_file = os.path.join(cls.instance.cache.path, "pipe.out")
-            setLogFile(log_file)
+            cls.instance.log_file = os.path.join(cls.instance.cache.path, "pipe.out")
+            setLogFile(cls.instance.log_file)
             log(f"Created new Pipeline with cache located at {cls.instance.cache.path}")
 
         return cls.instance
@@ -33,9 +33,9 @@ class Pipeline:
     ):
         """Factory function for creating all new Tasks"""
         # figure out which Task this Task should depend on, if any
-        old_task = None
+        dependencies = None
         if depends_on != None:
-            old_task = self.MostRecentMatching(depends_on)
+            dependencies = self.MostRecentMatching(depends_on)
             
 
         # create the new Task and append it to the Pipeline
@@ -45,7 +45,7 @@ class Pipeline:
             args, 
             kwargs, 
             self,
-            depends_on=old_task)
+            depends_on=dependencies)
         self.Tasks.append(new_task)
 
         if new_task.done:
@@ -57,11 +57,12 @@ class Pipeline:
         user_function, 
         args, 
         kwargs, 
-        task_name
+        views
     ):
         """Factory function for creating all new Views"""
+
         # figure out which Task this View should show
-        old_task = self.MostRecentMatching(task_name)
+        old_task = self.MostRecentMatching(views)
             
 
         # create the new Task and append it to the Pipeline
@@ -80,17 +81,24 @@ class Pipeline:
     # Find the most recently added task that matches the depends_on function
     def MostRecentMatching(self, depends_on):
 
-        # loop over the list in reverse since we want the 
-        # most recently added 
-        old_task = None
-        for i in range(len(self.Tasks)-1, -1, -1):
-            old_task = self.Tasks[i]
-            if old_task.user_function.__name__ == depends_on.__name__:
-                return old_task
+        if not isinstance(depends_on, list):
+            depends_on = [depends_on]
 
-        error(f"No matching Task found for '{depends_on.__name__}'")
-
-        
+        dependencies = []
+        for func in depends_on:
+            # loop over the list in reverse since we want the 
+            # most recently added 
+            task = None
+            task_found = False
+            for i in range(len(self.Tasks)-1, -1, -1):
+                task = self.Tasks[i]
+                if task.user_function.__name__ == func.__name__:
+                    task_found = True
+                    dependencies.append(task)
+                    break
+            if not task_found:
+                error(f"No matching Task found for '{func.__name__}'")
+        return dependencies
 
     @staticmethod
     def run():
@@ -99,6 +107,8 @@ class Pipeline:
 
         run_this_iteration = []
         waiting = [task for task in pipe.Tasks if not task.done]
+
+        num_waiting = len(waiting)
 
         MAX_ITERATIONS = 10000
         iterations = 0
@@ -114,6 +124,14 @@ class Pipeline:
                 task.run()
 
             waiting = [task for task in pipe.Tasks if not task.done]
+
+            log(f"Iteration {iterations} finished. {len(waiting)} Tasks left")
+            if len(waiting) != 0 and num_waiting <= len(waiting):
+                error("Looks like the last run didn't complete any Tasks. Check your script for missing dependencies. Exiting")
+
+            num_waiting = len(waiting)
+            
+
 
 
 
@@ -134,3 +152,22 @@ class Pipeline:
 
         log("All done.")
           
+
+    @staticmethod
+    def printCacheInfo():
+        pipe = Pipeline()
+
+        os.system(f"cat {pipe.cache.info_file}")
+
+    @staticmethod
+    def printLog():
+        pipe = Pipeline()
+
+        os.system(f"cat {pipe.log_file}")
+
+    @staticmethod
+    def clearCache():
+        pipe = Pipeline()
+        pipe.cache.clear()
+
+    

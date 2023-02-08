@@ -70,6 +70,34 @@ class Cache:
             pass
 
 
+    def clear(self):
+        
+        i = 0
+        while True:
+            print(f"[Caution] About to delete all files in {self.path}.")
+            answer = input("Is this ok? [y/n]\n")
+            if answer == "y":
+                print("Ok. Deleting files.")
+                break
+            elif answer == "n":
+                print("Got it. Your files are safe. Exiting now.")
+                exit()
+            elif i == 3:
+                print("Is there a cat walking on your keyboard right now?")
+            elif i == 4:
+                print("My cats do that a lot.")
+            elif i == 5:
+                print("Hi kitty! You are very cute! (=^･ω･^=)")
+            elif i == 6:
+                print("Ok thats enough. Can't risk you deleting your parent's files. Exiting.")
+                exit()
+            else:
+                print("Please answer with 'y' or 'n'")
+
+            i += 1
+        # end while True
+
+        os.system(f"rm {self.path}/*")
 
     def setPath(self, new_path):
         self.path = os.path.abspath(new_path)

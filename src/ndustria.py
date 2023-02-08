@@ -23,7 +23,7 @@ def AddTask(
 
     
 def AddView(
-    task=None
+    views=None
 ):
 
     pipe = Pipeline()
@@ -36,7 +36,7 @@ def AddView(
                 user_function, 
                 args, 
                 kwargs, 
-                task
+                views
             )
 
         return inner_wrapper

@@ -46,5 +46,5 @@ def log(msg):
 def setLogFile(filepath):
     global LOG_FILE 
     LOG_FILE = os.path.abspath(filepath)
-    with open(filepath, "a+") as log:
+    with open(filepath, "w") as log:
         pass

@@ -2,12 +2,12 @@
 
 class View:
 
-    def __init__(self, user_function, args, kwargs, pipeline, task):
+    def __init__(self, user_function, args, kwargs, pipeline, views):
         self.user_function = user_function
         self.args = args
         self.kwargs = kwargs
         self.pipeline = pipeline
-        self.task = task
+        self.tasks = views
         self.shown = False
 
         # name of the file where this Task's data is stored
@@ -39,7 +39,7 @@ class View:
         if not debug_string.endswith(")"):
             debug_string += ")"
 
-        debug_string += f" which views {str(self.task)}"
+        debug_string += f" which views {str(self.tasks)}"
 
         return debug_string
 
@@ -60,10 +60,21 @@ class View:
         through its dependencies and return true if they are all marked "done"
         """
         
-        return self.task.done
+        for task in self.tasks:
+            if not task.done:
+                return False
+        return True
 
 
-    # TODO: make this work for multiple dependencies
     def getDependencyData(self):
 
-        return self.task.getResult()
+        if len(self.tasks) == 1:
+
+            return self.tasks[0].getResult()
+        else:
+            dataDict = {}
+
+            for task in self.tasks:
+                dataDict[task.user_function.__name__] = task.getResult()
+
+            return dataDict

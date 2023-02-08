@@ -18,7 +18,7 @@ def do_analysis(data):
     }
     return result
 
-@AddView(task=do_analysis)
+@AddView(views=do_analysis)
 def view_data(data):
     print(f"""
 Viewing data for {data['length']} random numbers: 
