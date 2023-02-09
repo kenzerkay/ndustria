@@ -11,9 +11,6 @@ class Task:
         depends_on=None
     ):
         
-
-        # Task id assigned by pipeline to ensure all Tasks are unique
-        self.task_id = id
         self.user_function = user_function
         self.args = args
         self.kwargs = kwargs
@@ -33,8 +30,9 @@ class Task:
         # name of the file where this Task's data is stored
         self.filename = ""
 
-        # keep a hash for every Task so we know whether to invalidate the cache
+        # assign this Task its hashcode
         self.hashcode = ""
+        self.getHashCode()
 
         # reference to the data product this Task makes
         self.result = None
@@ -177,7 +175,15 @@ class Task:
         source_no_ws = remove_all_whitespace(source)
 
         # concatenate it with the arguments
-        target = append_args(source_no_ws+str(self.task_id), self.args, self.kwargs)
+        if self.indepedent:
+            target = append_args(source_no_ws, self.args, self.kwargs)
+        # if we have dependencies, add the hashcodes/filenames of those dependencies
+        else:
+            add_hashes = ""
+            for task in self.depends_on:
+                add_hashes += task.getHashCode()
+            
+            target = append_args(source_no_ws+add_hashes, self.args, self.kwargs)
         
         
         # convert string to a hash

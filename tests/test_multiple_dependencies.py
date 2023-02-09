@@ -1,6 +1,11 @@
 from ndustria import AddTask, AddView, Pipeline
 import numpy as np
 
+RERUN = True
+#RERUN = False
+
+if RERUN:
+    Pipeline.clearCache()
 
 @AddTask()
 def create_random_array(N=10):
@@ -48,7 +53,7 @@ Viewing data for {sum_data['length']} random numbers:
         Std dev : {std_data['std']}
 """)
 
-Pipeline.clearCache()
+
 
 for i in range(5, 8):
     N = 10**i
@@ -60,5 +65,3 @@ for i in range(5, 8):
 
 
 Pipeline.run()
-Pipeline.printCacheInfo()
-Pipeline.printLog()

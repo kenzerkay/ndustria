@@ -16,8 +16,6 @@ class Pipeline:
             cls.instance = super(Pipeline, cls).__new__(cls)
             
             cls.instance.cache = Cache("./temp")
-            cls.instance.log_file = os.path.join(cls.instance.cache.path, "pipe.out")
-            setLogFile(cls.instance.log_file)
             log(f"Created new Pipeline with cache located at {cls.instance.cache.path}")
 
         return cls.instance
@@ -163,7 +161,7 @@ class Pipeline:
     def printLog():
         pipe = Pipeline()
 
-        os.system(f"cat {pipe.log_file}")
+        os.system(f"cat {pipe.cache.log_file}")
 
     @staticmethod
     def clearCache():

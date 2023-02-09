@@ -1,6 +1,6 @@
 import pickle, os
 from tabulate import tabulate
-from Logger import log, error
+from Logger import log, error, setLogFile
 
 CACHE_PATH = "./temp"
 
@@ -8,19 +8,30 @@ class Cache:
 
     def __init__(self, path):
         self.setPath(path)
-        self.table = []
         self.headers = [
             "Task",
             "File size (bytes)",
             "File name in cache"
         ]
+    # end init
+
+
 
     def writeCacheInfo(self):
 
+        table_out = []
+
+        for k,v in self.table.items():
+            table_out.append([v[0], v[1], k])
+
         with open(self.info_file, "w") as info:
             info.write(f"\nCache location: {self.path}\n\n")
-            info.write(tabulate(self.table, headers=self.headers))
+            info.write(tabulate(table_out, headers=self.headers))
             info.write("\n")
+
+        with open(self.table_file, "wb") as cache_data:
+            pickle.dump(self.table, cache_data, protocol=0)
+    # end writeCacheInfo
 
 
     def exists(self, task):
@@ -29,6 +40,7 @@ class Cache:
         cache_hit = os.path.exists(cache_fname)
         
         return cache_hit 
+    # end exists
 
     def load(self, task):
         
@@ -45,6 +57,7 @@ class Cache:
             task.result = result
 
             return result
+    # end load
 
     def save(self, task):
         cache_fname = os.path.join(self.path, task.getFilename())
@@ -53,13 +66,14 @@ class Cache:
             pickle.dump(task.result, f, protocol=0)
 
         file_size = os.stat(cache_fname).st_size
-        self.table.append([
+        self.table[os.path.basename(cache_fname)] = (
             str(task),
             file_size,
-            os.path.basename(cache_fname)
-        ])
+        )
+            
         self.writeCacheInfo()
         log(f"Saved result of {task} to {cache_fname}")
+    # end save
 
 
     def remove(self, task):
@@ -68,7 +82,7 @@ class Cache:
             os.remove(cache_fname)
         except FileNotFoundError as e:
             pass
-
+    # end remove
 
     def clear(self):
         
@@ -97,20 +111,66 @@ class Cache:
             i += 1
         # end while True
 
+        # TODO: Rework this once the cache is better aware of which files 
+        # exist within it. The cache should specifically delete only those files
         os.system(f"rm {self.path}/*")
 
+        # Re-initialize the cache with empty files
+        self.setPath(self.path)
+    # end clear
+
     def setPath(self, new_path):
+
+        # Function to create file if does not exist
+        def touch(file):
+
+            if os.path.isfile(file): return
+
+            with open(file, 'w'):  
+                pass
+            # end with
+        # end touch
+
+        # same thing for directories
+        def touchDir(path):
+            if os.path.exists(path): return
+
+            os.mkdir(path)
+        # end touchDir
+
+
         self.path = os.path.abspath(new_path)
-        if not os.path.exists(self.path):
-                os.mkdir(self.path)
+        touchDir(self.path)
 
         self.info_file = os.path.join(self.path, "cache_info")
-        if not os.path.isfile(self.info_file):
-            with open(self.info_file, 'a'):  # Create file if does not exist
-                pass
+        touch(self.info_file)
 
-  
+        
+        self.log_file = os.path.join(self.path, "last_run.log")
+        setLogFile(self.log_file)
+        touch(self.log_file)
 
+        self.table_file = os.path.join(self.path, "cache_data")
+        touch(self.table_file)
+        self.loadTable()
+    # end setPath
     
+  
+    def loadTable(self):
+
+        try:
+            with open(self.table_file, 'rb') as f:
+                log(f"Reloading cache state from {self.table_file}")
+                self.table = pickle.load(f)
+        except EOFError as eof:
+            # There's nothing in the file (probably because it was just created)
+            # so initialize the table to an empty dictionary and move on
+            self.table = {}
+        except FileNotFoundError as fnf:
+            error(f"File not found: {self.table_file}. Exiting. ")
+
+    # end loadTable
+
+        
 
     

@@ -1,6 +1,10 @@
 from ndustria import AddTask, AddView, Pipeline
 import numpy as np
 
+RERUN = False
+
+if RERUN:
+    Pipeline.clearCache()
 
 @AddTask()
 def create_random_array(N=10):
@@ -36,5 +40,3 @@ for i in range(5, 8):
 
 
 Pipeline.run()
-Pipeline.printCacheInfo()
-Pipeline.printLog()
