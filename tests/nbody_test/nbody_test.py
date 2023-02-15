@@ -4,7 +4,8 @@ from nbody import (
     create_initial_conditions,
     run_simulation,
     do_analysis,
-    view_simulation
+    view_simulation,
+    virialization
 )
 
 RERUN = True
@@ -36,7 +37,8 @@ sim = Simulation(
 create_initial_conditions(sim)
 run_simulation(sim)
 do_analysis()
-view_simulation()
+#view_simulation()
+virialization()
 
 
 Pipeline.run()

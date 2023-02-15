@@ -228,18 +228,73 @@ def view_simulation(sim):
 		ax2.set_ylim(-300, 300)
 		plt.legend()
 
-		ax2.set_xlabel("Butthole")
+		ax2.set_xlabel("Time")
 		ax2.set_ylabel("Energy")	
 
 
 		return particles, KE, PE, totalE,
 
-	anim = animation.FuncAnimation(fig, update, interval=10, frames=sim.Nt)
+	anim = animation.FuncAnimation(fig, update, interval=3, frames=sim.Nt)
 	plt.show(block=True)
 	
 	
-	
-	    
+# This is mostly for demos but can also be used for testing
+@AddView(views=do_analysis)
+def virialization(sim):
+
+	fig = plt.figure(figsize=(8,10))
+	grid = plt.GridSpec(4, 1, wspace=0.0, hspace=0.5)
+	ax1 = fig.add_subplot(grid[0:2, 0], projection='3d')
+	ax2 = fig.add_subplot(grid[2,0])
+	ax3 = fig.add_subplot(grid[3,0])
+
+
+	P_over_K = np.abs(sim.PE/sim.KE)
+
+	def update(frame):
+
+		plt.sca(ax1)
+		plt.cla()
+
+		particles = ax1.scatter(sim.getPosX(frame), sim.getPosY(frame), sim.getPosZ(frame))
+
+		ax1.set(xlim=(-2, 2), ylim=(-2, 2), zlim=(-2, 2))
+		ax1.set_aspect('auto', 'box')
+		ax1.set_xticks([-2,-1,0,1,2])
+		ax1.set_yticks([-2,-1,0,1,2])
+		ax1.set_zticks([-2,-1,0,1,2])
+
+		plt.sca(ax2)
+		plt.cla()
+
+		KE = ax2.plot(sim.t[:frame], sim.KE[:frame], c='b', label="KE")
+		PE = ax2.plot(sim.t[:frame], sim.PE[:frame], c='g', label="PE")
+		totalE = ax2.plot(sim.t[:frame], (sim.KE+sim.PE)[:frame], c='k', label="Total")
+		ax2.set_xlim(sim.t[0], sim.t[-1])
+		ax2.set_ylim(-300, 300)
+		plt.legend()
+
+		ax2.set_xlabel("Time")
+		ax2.set_ylabel("Energy")
+
+		plt.sca(ax3)
+		plt.cla()
+
+		ratio = ax3.plot(sim.t[:frame], P_over_K[:frame], c='r')
+		ax3.set_xlim(sim.t[0], sim.t[-1])
+		ax3.set_ylim(0, 5)
+
+		ax3.set_xlabel("Time")
+		ax3.set_ylabel("Potential/Kinetic Energy")	
+		ax3.hlines(2, 0, sim.tEnd, colors=['k'])
+
+		
+		plt.title("Virialization condition is PE/KE = 2")
+
+		return particles, KE, ratio,
+
+	anim = animation.FuncAnimation(fig, update, interval=3, frames=sim.Nt)
+	plt.show(block=True)
 	
 
 
