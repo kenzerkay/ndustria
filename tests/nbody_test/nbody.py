@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from ndustria import AddTask, AddView
 
 """
 Create Your Own N-body Simulation (With Python)
@@ -8,7 +10,7 @@ Simulate orbits of stars interacting due to gravity
 Code calculates pairwise forces according to Newton's Law of Gravity
 
 Modified to allow ndustria to handle simulation and analysis for 
-the purposes of demonstrating ndustria's capabilities
+the purposes of demonstrating and testing ndustria's capabilities
 """
 
 class Simulation:
@@ -25,20 +27,33 @@ class Simulation:
 		self.N = N
 		self.tEnd = tEnd		
 		self.Nt = int(np.ceil(tEnd/dt)) # number of timesteps
+		self.t = np.zeros(self.Nt) # simulation time at index
 		self.dt = dt
 		self.softening = softening
 		self.G = G
 		self.random_seed = random_seed
 
 		self.mass = np.zeros(N)
-		self.pos = np.zeros(self.Nt, N, 3)
-		self.vel = np.zeros(self.Nt, N, 3)
+		self.pos = np.zeros((self.Nt, N, 3))
+		self.vel = np.zeros((self.Nt, N, 3))
+
+		self.KE = None
+		self.PE = None
 
 	def __str__(self):
 		return f"Simulation(N={self.N},tEnd={self.tEnd},dt={self.dt},softening={self.softening},G={self.G},random_seed={self.random_seed})"
 
 	def __repr__(self):
 		return str(self)
+
+	def getPosX(self, time_index):
+		return self.pos[time_index, :, 0]
+
+	def getPosY(self, time_index):
+		return self.pos[time_index, :, 1]
+
+	def getPosZ(self, time_index):
+		return self.pos[time_index, :, 2]
 
 def calculate_acceleration( sim, iteration ):
 	"""
@@ -72,48 +87,14 @@ def calculate_acceleration( sim, iteration ):
 
 	return a
 
-#@AddTask()
-def do_analysis( sim ):
-	"""
-	Get kinetic energy (KE) and potential energy (PE) of simulation
-	pos is N x 3 matrix of positions
-	vel is N x 3 matrix of velocities
-	mass is an N x 1 vector of masses
-	G is Newton's Gravitational constant
-	KE is the kinetic energy of the system
-	PE is the potential energy of the system
-	"""
-	# Kinetic Energy:
-	KE = 0.5 * np.sum(np.sum( sim.mass * sim.vel**2 ))
 
-
-	# Potential Energy:
-
-	# positions r = [x,y,z] for all particles
-	x = sim.pos[:,0:1]
-	y = sim.pos[:,1:2]
-	z = sim.pos[:,2:3]
-
-	# matrix that stores all pairwise particle separations: r_j - r_i
-	dx = x.T - x
-	dy = y.T - y
-	dz = z.T - z
-
-	# matrix that stores 1/r for all particle pairwise particle separations 
-	inv_r = np.sqrt(dx**2 + dy**2 + dz**2)
-	inv_r[inv_r>0] = 1.0/inv_r[inv_r>0]
-
-	# sum over upper triangle, to count each interaction only once
-	PE = sim.G * np.sum(np.sum(np.triu(-(sim.mass * sim.mass.T)*inv_r,1)))
-	
-	return KE, PE
 
 #@AddTask()
 def create_initial_conditions(sim):
     # Generate Initial Conditions
 	np.random.seed(sim.random_seed)            # set the random number generator seed
 	
-	sim.mass = 20.0*np.ones((sim.N,1))/sim.N  # total mass of particles is 20
+	sim.mass = 20*np.ones((sim.N,1))/sim.N  # total mass of particles is 20
 	pos  = np.random.randn(sim.N, 3)   # randomly selected positions and velocities
 	vel  = np.random.randn(sim.N, 3)
 	
@@ -128,7 +109,7 @@ def create_initial_conditions(sim):
 	return result
 	
 
-#@AddTask()
+#@AddTask(depends_on=create_initial_conditions)
 def run_simulation(initial_conditions, sim ):
 	""" N-body simulation """
 
@@ -136,77 +117,120 @@ def run_simulation(initial_conditions, sim ):
 	np.copyto(sim.vel[0], initial_conditions["vel"])
 	
 	# calculate initial gravitational accelerations
-	acc = calculate_acceleration( sim )
+	acc = calculate_acceleration( sim , 0)
+
+	# Calculated using Verlet method
+	# calculate the first half step velocity outside the loop
+	half_step_vel = sim.vel[0] + 0.5 * acc * sim.dt
 	
 	# Simulation Main Loop
-	for i in range(sim.Nt):
+	for i in range(0, sim.Nt-1):
 
-		# Calculated using leap frog method
-		
-		# (1/2) kick
-		sim.vel[i+1] = sim.vel[i] + acc * sim.dt/2.0
-		
-		# drift
-		pos += vel * sim.dt
+		# calculate position next full step
+		sim.pos[i+1] = sim.pos[i] + half_step_vel * sim.dt
 		
 		# update accelerations
-		acc = calculate_acceleration( sim, i )
+		acc = calculate_acceleration( sim, i+1 )
 		
-		# (1/2) kick
-		vel += acc * sim.dt/2.0
+		# calculate velocity next full step
+		sim.vel[i+1] = half_step_vel + 0.5 * acc * sim.dt
+
+		# update half step velocity
+		half_step_vel += acc * sim.dt
 		
 		# update time
-		t += sim.dt
+		sim.t[i+1] = sim.t[i] + sim.dt
+
+		print(f"Simulation time: {sim.t[i+1]:.2f}/{sim.tEnd}", end="\r")
+
+	return sim
 		
-		
-#@AddView()
-def view_simulation():
+#@AddTask(depends_on=run_simulation)
+def do_analysis( sim ):
+	"""
+	Get kinetic energy (KE) and potential energy (PE) of simulation
+	pos is N x 3 matrix of positions
+	vel is N x 3 matrix of velocities
+	mass is an N x 1 vector of masses
+	G is Newton's Gravitational constant
+	KE is the kinetic energy of the system
+	PE is the potential energy of the system
+	"""
+	# Kinetic Energy:
+	sim.KE = np.array(
+		[0.5 * np.sum(np.sum( sim.mass * vel**2 )) for vel in sim.vel ] 
+	)
+
+
+	# Potential Energy:
+	sim.PE = np.zeros_like(sim.KE)
+
+	for i in range(sim.Nt):
+		# positions r = [x,y,z] for all particles
+		x = sim.pos[i, :, 0:1]
+		y = sim.pos[i, :, 1:2]
+		z = sim.pos[i, :, 2:3]	
+
+		# matrix that stores all pairwise particle separations: r_j - r_i
+		dx = x.T - x
+		dy = y.T - y
+		dz = z.T - z
+
+		# matrix that stores 1/r for all particle pairwise particle separations 
+		inv_r = np.sqrt(dx**2 + dy**2 + dz**2)
+		inv_r[inv_r>0] = 1.0/inv_r[inv_r>0]
+
+		# sum over upper triangle, to count each interaction only once
+		sim.PE[i] = sim.G * np.sum(np.sum(np.triu(-(sim.mass * sim.mass.T)*inv_r,1)))
+	
+	return sim		
+
+#@AddView(task=do_analysis)
+def view_simulation(sim):
 
 	# prep figure
-	fig = plt.figure(figsize=(4,5), dpi=80)
+	plt.ion()
+
+	fig = plt.figure(figsize=(8,10))
 	grid = plt.GridSpec(3, 1, wspace=0.0, hspace=0.3)
-	ax1 = plt.subplot(grid[0:2,0])
-	ax2 = plt.subplot(grid[2,0])
-		
-	# plot in real time
-	if plotRealTime or (i == Nt-1):
+	ax1 = fig.add_subplot(grid[0:2, 0], projection='3d')
+	ax2 = fig.add_subplot(grid[2,0])
+
+	def update(frame):
+
 		plt.sca(ax1)
 		plt.cla()
-		xx = pos_save[:,0,max(i-50,0):i+1]
-		yy = pos_save[:,1,max(i-50,0):i+1]
-		plt.scatter(xx,yy,s=1,color=[.7,.7,1])
-		plt.scatter(pos[:,0],pos[:,1],s=10,color='blue')
-		ax1.set(xlim=(-2, 2), ylim=(-2, 2))
-		ax1.set_aspect('equal', 'box')
+		particles = ax1.scatter(sim.getPosX(frame), sim.getPosY(frame), sim.getPosZ(frame))
+
+		ax1.set(xlim=(-2, 2), ylim=(-2, 2), zlim=(-2, 2))
+		ax1.set_aspect('auto', 'box')
 		ax1.set_xticks([-2,-1,0,1,2])
 		ax1.set_yticks([-2,-1,0,1,2])
-		
+		ax1.set_zticks([-2,-1,0,1,2])
+
 		plt.sca(ax2)
 		plt.cla()
-		plt.scatter(t_all,KE_save,color='red',s=1,label='KE' if i == Nt-1 else "")
-		plt.scatter(t_all,PE_save,color='blue',s=1,label='PE' if i == Nt-1 else "")
-		plt.scatter(t_all,KE_save+PE_save,color='black',s=1,label='Etot' if i == Nt-1 else "")
-		ax2.set(xlim=(0, tEnd), ylim=(-300, 300))
-		ax2.set_aspect(0.007)
-		
-		plt.pause(0.001)
+
+		KE = ax2.plot(sim.t[:frame], sim.KE[:frame], c='b', label="KE")
+		PE = ax2.plot(sim.t[:frame], sim.PE[:frame], c='g', label="PE")
+		totalE = ax2.plot(sim.t[:frame], (sim.KE+sim.PE)[:frame], c='k', label="Total")
+		ax2.set_xlim(sim.t[0], sim.t[-1])
+		ax2.set_ylim(-300, 150)
+		plt.legend()
+
+		ax2.set_xlabel("Time")
+		ax2.set_ylabel("Energy")	
+
+
+		return particles, KE, PE, totalE,
+
+	anim = animation.FuncAnimation(fig, update, interval=10, frames=sim.Nt)
+	plt.show(block=True)
+	
+	
+	
 	    
-	
-	
-	# add labels/legend
-	plt.sca(ax2)
-	plt.xlabel('time')
-	plt.ylabel('energy')
-	ax2.legend(loc='upper right')
-	
-	# Save figure
-	plt.savefig('nbody.png',dpi=240)
-	plt.show()
-	    
-	return 0
 	
 
 
   
-if __name__== "__main__":
-  main()

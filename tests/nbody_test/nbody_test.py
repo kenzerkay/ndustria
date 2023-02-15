@@ -25,7 +25,7 @@ softening = 0.1    # softening length
 G         = 1.0    # Newton's Gravitational Constant
 random_seed = 91415 # date of first gravitational wave detection
 
-# Simulate with 100 particles
+# Simulate with 100, 1000 particles
 for i in range(2,3):
 
     sim = Simulation(
@@ -37,10 +37,12 @@ for i in range(2,3):
         random_seed=random_seed
     )
 
+    print(f"Running simulation with {sim.N} particles")
+
     ics = create_initial_conditions(sim)
     run_simulation(ics, sim)
-    do_analysis()
-    view_simulation()
+    do_analysis(sim)
+    view_simulation(sim)
 
 
 Pipeline.run()
