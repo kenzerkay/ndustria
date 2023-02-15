@@ -89,7 +89,7 @@ def calculate_acceleration( sim, iteration ):
 
 
 
-#@AddTask()
+@AddTask()
 def create_initial_conditions(sim):
     # Generate Initial Conditions
 	np.random.seed(sim.random_seed)            # set the random number generator seed
@@ -109,9 +109,11 @@ def create_initial_conditions(sim):
 	return result
 	
 
-#@AddTask(depends_on=create_initial_conditions)
+@AddTask(depends_on=create_initial_conditions)
 def run_simulation(initial_conditions, sim ):
 	""" N-body simulation """
+
+	print(f"Running simulation with {sim.N} particles...")
 
 	np.copyto(sim.pos[0], initial_conditions["pos"])
 	np.copyto(sim.vel[0], initial_conditions["vel"])
@@ -143,9 +145,10 @@ def run_simulation(initial_conditions, sim ):
 
 		print(f"Simulation time: {sim.t[i+1]:.2f}/{sim.tEnd}", end="\r")
 
+	print("Simulation done.")
 	return sim
 		
-#@AddTask(depends_on=run_simulation)
+@AddTask(depends_on=run_simulation)
 def do_analysis( sim ):
 	"""
 	Get kinetic energy (KE) and potential energy (PE) of simulation
@@ -156,6 +159,10 @@ def do_analysis( sim ):
 	KE is the kinetic energy of the system
 	PE is the potential energy of the system
 	"""
+
+
+	print("Running analysis...")
+
 	# Kinetic Energy:
 	sim.KE = np.array(
 		[0.5 * np.sum(np.sum( sim.mass * vel**2 )) for vel in sim.vel ] 
@@ -182,10 +189,13 @@ def do_analysis( sim ):
 
 		# sum over upper triangle, to count each interaction only once
 		sim.PE[i] = sim.G * np.sum(np.sum(np.triu(-(sim.mass * sim.mass.T)*inv_r,1)))
+
+		print(f"Analysis progress: {100*i/sim.Nt:.2f}%", end="\r")
 	
+	print("Analysis Done                                    ")
 	return sim		
 
-#@AddView(task=do_analysis)
+@AddView(views=do_analysis)
 def view_simulation(sim):
 
 	# prep figure
@@ -215,10 +225,10 @@ def view_simulation(sim):
 		PE = ax2.plot(sim.t[:frame], sim.PE[:frame], c='g', label="PE")
 		totalE = ax2.plot(sim.t[:frame], (sim.KE+sim.PE)[:frame], c='k', label="Total")
 		ax2.set_xlim(sim.t[0], sim.t[-1])
-		ax2.set_ylim(-300, 150)
+		ax2.set_ylim(-300, 300)
 		plt.legend()
 
-		ax2.set_xlabel("Time")
+		ax2.set_xlabel("Butthole")
 		ax2.set_ylabel("Energy")	
 
 

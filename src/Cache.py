@@ -2,6 +2,9 @@ import pickle, os
 from tabulate import tabulate
 from Logger import log, error, setLogFile
 
+# including numpy support
+import numpy as np
+
 CACHE_PATH = "./temp"
 
 class Cache:
@@ -30,7 +33,7 @@ class Cache:
             info.write("\n")
 
         with open(self.table_file, "wb") as cache_data:
-            pickle.dump(self.table, cache_data, protocol=0)
+            pickle.dump(self.table, cache_data)
     # end writeCacheInfo
 
 
@@ -61,9 +64,11 @@ class Cache:
 
     def save(self, task):
         cache_fname = os.path.join(self.path, task.getFilename())
+
+        result = task.getResult()
         
         with open(cache_fname, 'wb') as f:
-            pickle.dump(task.result, f, protocol=0)
+            pickle.dump(task.result, f)
 
         file_size = os.stat(cache_fname).st_size
         self.table[os.path.basename(cache_fname)] = (
@@ -94,7 +99,7 @@ class Cache:
                 print("Ok. Deleting files.")
                 break
             elif answer == "n":
-                print("Got it. Your files are safe. Exiting now.")
+                print("Got it. Your files are safe. Exiting.")
                 exit()
             elif i == 3:
                 print("Is there a cat walking on your keyboard right now?")
