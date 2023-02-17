@@ -2,12 +2,20 @@
 
 class View:
 
-    def __init__(self, user_function, args, kwargs, pipeline, views):
+    def __init__(
+            self, 
+            user_function, 
+            args, kwargs, 
+            pipeline, 
+            looks_at, 
+            root_proc_only
+        ):
         self.user_function = user_function
         self.args = args
         self.kwargs = kwargs
         self.pipeline = pipeline
-        self.tasks = views
+        self.tasks = looks_at
+        self.root_proc_only = root_proc_only
         self.shown = False
 
         # name of the file where this Task's data is stored
@@ -48,6 +56,9 @@ class View:
 
     def run(self):
 
+        if self.root_proc_only and not self.pipeline.isRoot():
+            return
+        
         data = self.getDependencyData()
         self.user_function(data, *self.args, **self.kwargs)
             
@@ -69,12 +80,10 @@ class View:
     def getDependencyData(self):
 
         if len(self.tasks) == 1:
-
             return self.tasks[0].getResult()
-        else:
-            dataDict = {}
+        
+        all_results = []
+        for task in self.tasks:
+            all_results.append( task.getResult() )
 
-            for task in self.tasks:
-                dataDict[task.user_function.__name__] = task.getResult()
-
-            return dataDict
+        return all_results

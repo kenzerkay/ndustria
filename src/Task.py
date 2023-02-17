@@ -91,11 +91,16 @@ class Task:
         self.pipeline.cache.save(self)
         self.done = True
 
-    # TODO: make this work for multiple dependencies
     def getDependencyData(self):
 
+        if len(self.depends_on) == 1:
+            return self.depends_on[0].getResult()
+        
+        all_results = []
         for task in self.depends_on:
-            return task.getResult()
+            all_results.append( task.getResult() )
+
+        return all_results
 
     def getFilename(self):
 

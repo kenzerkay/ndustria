@@ -64,6 +64,7 @@ def calculate_acceleration( sim, iteration ):
 	softening is the softening length
 	a is N x 3 matrix of accelerations
 	"""
+
 	# positions r = [x,y,z] for all particles
 	x = sim.pos[iteration, :, 0:1]
 	y = sim.pos[iteration, :, 1:2]
@@ -91,6 +92,8 @@ def calculate_acceleration( sim, iteration ):
 
 @AddTask()
 def create_initial_conditions(sim):
+	print("Creating Initial conditions...")
+
     # Generate Initial Conditions
 	np.random.seed(sim.random_seed)            # set the random number generator seed
 	
@@ -105,6 +108,7 @@ def create_initial_conditions(sim):
 		"pos" : pos,
 		"vel" : vel
 	}
+	print("Initial Conditions created.")
 
 	return result
 	
@@ -195,7 +199,7 @@ def do_analysis( sim ):
 	print("Analysis Done                                    ")
 	return sim		
 
-@AddView(views=do_analysis)
+@AddView(looks_at=do_analysis)
 def view_simulation(sim):
 
 	# prep figure
@@ -239,7 +243,7 @@ def view_simulation(sim):
 	
 	
 # This is mostly for demos but can also be used for testing
-@AddView(views=do_analysis)
+@AddView(looks_at=do_analysis)
 def virialization(sim):
 
 	fig = plt.figure(figsize=(8,10))
@@ -298,4 +302,92 @@ def virialization(sim):
 	
 
 
-  
+@AddView(looks_at=do_analysis, match="all", root_proc_only=True)
+def softening_length_test(all_data):
+
+	fig = plt.figure(figsize=(24,10))
+	grid = plt.GridSpec(4, 3, wspace=0.0, hspace=0.5)
+
+	axes = []
+	P_over_K = []
+	particles = []
+
+	for i in range(3):
+
+		sim = all_data[i]
+		axes.append(
+			fig.add_subplot(grid[0:2, i], projection='3d')
+		)
+
+		axes.append(
+			fig.add_subplot(grid[2,i])
+		)
+
+		axes.append(
+			fig.add_subplot(grid[3,i])
+		)
+
+		P_over_K = np.abs(sim.PE/sim.KE) 
+
+		ax = axes[i*3]
+		plt.sca(ax)
+		plt.cla()
+
+		particle_plot, = ax.plot(sim.getPosX(0), sim.getPosY(0), sim.getPosZ(0),linestyle="", marker=".")
+		particles.append(particle_plot)
+
+		ax.set(xlim=(-2, 2), ylim=(-2, 2), zlim=(-2, 2))
+		ax.set_aspect('auto', 'box')
+		ax.set_xticks([-2,-1,0,1,2])
+		ax.set_yticks([-2,-1,0,1,2])
+		ax.set_zticks([-2,-1,0,1,2])
+
+		plt.title(f"Softening length = {sim.softening}")
+
+		ax = axes[i*3+1]
+		plt.sca(ax)
+		plt.cla()
+
+		KE = ax.plot(sim.t, sim.KE, c='b', label="KE")
+		PE = ax.plot(sim.t, sim.PE, c='g', label="PE")
+		totalE = ax.plot(sim.t, (sim.KE+sim.PE), c='k', label="Total")
+		ax.set_xlim(sim.t[0], sim.t[-1])
+		ax.set_ylim(-300, 300)
+
+		if i==0:
+			ax.set_xlabel("Time")
+			ax.set_ylabel("Energy")
+			plt.legend()
+		else:
+			ax.set_yticks([])
+
+
+		ax = axes[i*3+2]
+		plt.sca(ax)
+		plt.cla()
+
+		ratio = ax.plot(sim.t, P_over_K, c='r')
+		ax.set_xlim(sim.t[0], sim.t[-1])
+		ax.set_ylim(0, 5)
+
+		if i==0:
+			ax.set_ylabel("Potential/Kinetic Energy")	
+		else:
+			ax.set_yticks([])
+		ax.hlines(2, 0, sim.tEnd, colors=['k'])
+
+		if i == 1:
+			ax.set_xlabel("Time")
+			plt.title("Virialization condition is PE/KE = 2")
+
+	def update(frame):
+
+		for i,p in enumerate(particles):
+			sim = all_data[i]
+			p.set_data(sim.getPosX(frame), sim.getPosY(frame))
+			p.set_3d_properties(sim.getPosZ(frame))
+
+		return *particles,
+
+	anim = animation.FuncAnimation(fig, update, interval=3, frames=sim.Nt)
+	plt.show(block=True)

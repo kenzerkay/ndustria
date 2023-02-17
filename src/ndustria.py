@@ -2,7 +2,8 @@ import functools
 from Pipeline import Pipeline
 
 def AddTask(
-    depends_on=None
+    depends_on=None,
+    match="most_recent"
 ):
 
     pipe = Pipeline()
@@ -15,7 +16,8 @@ def AddTask(
                 user_function, 
                 args, 
                 kwargs, 
-                depends_on=depends_on
+                depends_on=depends_on,
+                match=match
             )
 
         return inner_wrapper
@@ -23,7 +25,9 @@ def AddTask(
 
     
 def AddView(
-    views=None
+    looks_at=None,
+    match="most_recent",
+    root_proc_only=False
 ):
 
     pipe = Pipeline()
@@ -36,7 +40,9 @@ def AddView(
                 user_function, 
                 args, 
                 kwargs, 
-                views
+                looks_at,
+                match=match,
+                root_proc_only=root_proc_only
             )
 
         return inner_wrapper

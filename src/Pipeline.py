@@ -4,7 +4,9 @@ from Cache import Cache
 from View import View
 
 import os
-from Logger import log, error, setLogFile
+from Logger import log, error
+
+from mpi4py import MPI
 
 class Pipeline:
 
@@ -18,6 +20,9 @@ class Pipeline:
             cls.instance.cache = Cache("./temp")
             log(f"Created new Pipeline with cache located at {cls.instance.cache.path}")
 
+            # TODO: Put some more thought into whether we should be using COMM_WORLD
+            cls.instance.comm = MPI.COMM_WORLD
+
         return cls.instance
 
     def __init__(self):
@@ -27,14 +32,22 @@ class Pipeline:
         user_function, 
         args, 
         kwargs, 
-        depends_on=None
+        depends_on=None,
+        match="most_recent"
     ):
         """Factory function for creating all new Tasks"""
         # figure out which Task this Task should depend on, if any
         dependencies = None
         if depends_on != None:
-            dependencies = self.MostRecentMatching(depends_on)
-            
+
+            if match == "most_recent":
+                dependencies = self.MatchMostRecent(depends_on)
+            elif match == "all":
+                dependencies = self.MatchAll(depends_on)
+            else:
+                error(f"No dependency match solution for {match}")
+
+
 
         # create the new Task and append it to the Pipeline
         new_task = Task(
@@ -55,12 +68,22 @@ class Pipeline:
         user_function, 
         args, 
         kwargs, 
-        views
+        looks_at,
+        match="most_recent",
+        root_proc_only=False
     ):
         """Factory function for creating all new Views"""
 
         # figure out which Task this View should show
-        old_task = self.MostRecentMatching(views)
+        dependencies = None
+        if looks_at != None:
+
+            if match == "most_recent":
+                dependencies = self.MatchMostRecent(looks_at)
+            elif match == "all":
+                dependencies = self.MatchAll(looks_at)
+            else:
+                error(f"No dependency match solution for {match}")
             
 
         # create the new Task and append it to the Pipeline
@@ -69,15 +92,20 @@ class Pipeline:
             args, 
             kwargs, 
             self,
-            old_task)
+            dependencies,
+            root_proc_only)
         self.Views.append(new_view)
 
         log(f"Added new View: {new_view}")
 
 
-    # First and default Dependency strategy
-    # Find the most recently added task that matches the depends_on function
-    def MostRecentMatching(self, depends_on):
+    """ 
+    Dependency matching functions
+    These search the Task list for Tasks that match the function specified
+    in the depends_on field
+    """
+    def MatchMostRecent(self, depends_on):
+        """First and default Dependency strategy. Find the most recently added task that matches the depends_on function(s) """
 
         if not isinstance(depends_on, list):
             depends_on = [depends_on]
@@ -97,11 +125,52 @@ class Pipeline:
             if not task_found:
                 error(f"No matching Task found for '{func.__name__}'")
         return dependencies
+    
+    def MatchAll(self, depends_on):
+        """ Find all Tasks that match the depends_on function(s) """
 
+        if not isinstance(depends_on, list):
+            depends_on = [depends_on]
+
+        dependencies = []
+        task_found = False # set to True if at least one Task is found
+        for func in depends_on:
+            for task in self.Tasks:
+                if task.user_function.__name__ == func.__name__:
+                    dependencies.append(task)
+                    task_found = True
+            if not task_found:
+                error(f"No matching Task found for '{func.__name__}'")
+        return dependencies
+
+
+    """
+    Parallel utility functions
+    """
+    def getCommRank(self):
+        return self.comm.Get_rank()
+
+    def getCommSize(self):
+        return self.comm.Get_size()
+    
+    def isRoot(self):
+        return self.comm.Get_rank() == 0
+
+    """
+    The main Task running function
+    """
     @staticmethod
-    def run():
+    def run(rerun=False, parallel=False):
 
         pipe = Pipeline()
+
+        if parallel:
+            log(f"Initializing parallel run with {pipe.getCommSize()} processes")
+
+        if rerun:
+            pipe.clearCache()
+
+        pipe.comm.Barrier()
 
         run_this_iteration = []
         waiting = [task for task in pipe.Tasks if not task.done]
@@ -110,7 +179,7 @@ class Pipeline:
 
         MAX_ITERATIONS = 10000
         iterations = 0
-        while len(waiting) > 0 and iterations < MAX_ITERATIONS:
+        while num_waiting > 0 and iterations < MAX_ITERATIONS:
             iterations+=1
 
             run_this_iteration = [task for task in waiting if task.readyToRun()]
@@ -118,20 +187,32 @@ class Pipeline:
 
             #TODO: May want to put a try catch around this to 
             # help it fail gracefully
-            for task in run_this_iteration:
-                task.run()
+            for i, task in enumerate(run_this_iteration):
+
+                if parallel:
+                    if i % pipe.getCommSize() == pipe.getCommRank():
+                        print(f"[Rank {pipe.getCommRank()}] running:" + str(task))
+
+                        task.run()
+                    else:
+                        # Mark this Task done on other processes
+                        task.done = True
+                else:
+                    task.run()
+
+            pipe.comm.Barrier()
 
             waiting = [task for task in pipe.Tasks if not task.done]
 
-            log(f"Iteration {iterations} finished. {len(waiting)} Tasks left")
+            print(f"[Rank {pipe.getCommRank()}] waiting on {len(waiting)} Tasks")
+
+            log(f"---\nIteration {iterations} finished. {len(waiting)} Tasks left\n---")
             if len(waiting) != 0 and num_waiting <= len(waiting):
                 error("Looks like the last run didn't complete any Tasks. Check your script for missing dependencies. Exiting")
 
             num_waiting = len(waiting)
             
-
-
-
+        # end main while loop
 
         log(f"Finished all tasks after {iterations} iterations")
 
@@ -147,6 +228,8 @@ class Pipeline:
                 view.run()
 
             waiting = [view for view in pipe.Views if not view.shown]
+
+        # end Views while loop
 
         log("All done.")
           
@@ -166,6 +249,12 @@ class Pipeline:
     @staticmethod
     def clearCache():
         pipe = Pipeline()
-        pipe.cache.clear()
+
+        if pipe.isRoot():
+            pipe.cache.clear()
+            
+        for task in pipe.Tasks:
+            task.done = False
+            task.result = None
 
     

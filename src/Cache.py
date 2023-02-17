@@ -93,7 +93,7 @@ class Cache:
         
         i = 0
         while True:
-            print(f"[Caution] About to delete all files in {self.path}.")
+            print(f"\n[Caution] About to delete all files in {self.path}.")
             answer = input("Is this ok? [y/n]\n")
             if answer == "y":
                 print("Ok. Deleting files.")
@@ -122,6 +122,7 @@ class Cache:
 
         # Re-initialize the cache with empty files
         self.setPath(self.path)
+
     # end clear
 
     def setPath(self, new_path):
