@@ -3,7 +3,7 @@ from Task import Task
 from Cache import Cache
 from View import View
 
-import os
+import os, sys
 from Logger import log, error
 
 from mpi4py import MPI
@@ -16,7 +16,9 @@ class Pipeline:
     def __new__(cls):
         if not hasattr(cls, 'instance'):
             cls.instance = super(Pipeline, cls).__new__(cls)
-            
+
+            # name the pipeline after the file that ran it w/o .py
+            cls.instance.name = sys.argv[0].replace(".py","")
             cls.instance.cache = Cache("./temp")
             log(f"Created new Pipeline with cache located at {cls.instance.cache.path}")
 
@@ -160,9 +162,16 @@ class Pipeline:
     The main Task running function
     """
     @staticmethod
-    def run(rerun=False, parallel=False):
+    def run(
+        rerun=False, 
+        parallel=False,
+        dryrun=False,
+        timeit=False ):
 
         pipe = Pipeline()
+
+        pipe.timeit = timeit
+        pipe.dryrun = dryrun
 
         if parallel:
             log(f"Initializing parallel run with {pipe.getCommSize()} processes")
@@ -190,9 +199,9 @@ class Pipeline:
             for i, task in enumerate(run_this_iteration):
 
                 if parallel:
+                    # round robin distribute Tasks to processes
                     if i % pipe.getCommSize() == pipe.getCommRank():
                         print(f"[Rank {pipe.getCommRank()}] running:" + str(task))
-
                         task.run()
                     else:
                         # Mark this Task done on other processes
@@ -231,6 +240,11 @@ class Pipeline:
 
         # end Views while loop
 
+        if pipe.timeit:
+            with open(f"{pipe.name}_timing.csv", "w") as timing_data:
+                for task in pipe.Tasks:
+                    timing_data.write(f"{task.user_function.__name__}, {task.wallTime}\n")
+
         log("All done.")
           
 
@@ -252,7 +266,7 @@ class Pipeline:
 
         if pipe.isRoot():
             pipe.cache.clear()
-            
+
         for task in pipe.Tasks:
             task.done = False
             task.result = None

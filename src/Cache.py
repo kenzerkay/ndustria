@@ -93,7 +93,7 @@ class Cache:
         
         i = 0
         while True:
-            print(f"\n[Caution] About to delete all files in {self.path}.")
+            print(f"\n[Caution] About to delete all files in {self.path}")
             answer = input("Is this ok? [y/n]\n")
             if answer == "y":
                 print("Ok. Deleting files.")
@@ -159,6 +159,7 @@ class Cache:
         self.table_file = os.path.join(self.path, "cache_data")
         touch(self.table_file)
         self.loadTable()
+
     # end setPath
     
   

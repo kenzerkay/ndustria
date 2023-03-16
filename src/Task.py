@@ -1,4 +1,4 @@
-import inspect, hashlib
+import inspect, hashlib, time
 from Logger import log, warn
 
 class Task:
@@ -15,6 +15,7 @@ class Task:
         self.args = args
         self.kwargs = kwargs
         self.pipeline = pipeline
+        self.wallTime = 0
 
         # True if the Task has no dependencies
         self.indepedent = False
@@ -83,11 +84,32 @@ class Task:
         log(f"Running {self}")
 
         if self.indepedent:
-            self.result = self.user_function(*self.args, **self.kwargs)            
+            if self.pipeline.timeit: 
+                start = time.time()
+            ###################################################################
+            # Run the actual function
+            ###################################################################
+            self.result = self.user_function(*self.args, **self.kwargs)   
+            
+            if self.pipeline.timeit: 
+                self.wallTime = time.time() - start         
         else:
             data = self.getDependencyData()
+
+            if self.pipeline.timeit: 
+                start = time.time()
+
+            ###################################################################
+            # Run the actual function with data from its dependencies
+            ###################################################################
             self.result = self.user_function(data, *self.args, **self.kwargs)
+
+            if self.pipeline.timeit: 
+                self.wallTime = time.time() - start
             
+        ###################################################################
+        # Save the result
+        ###################################################################
         self.pipeline.cache.save(self)
         self.done = True
 
@@ -112,7 +134,7 @@ class Task:
     def getResult(self):
         """
         Gets the result of this task if one exists
-        Will return None 
+        Will return None if no result exists
         """
 
         if not self.done:
@@ -165,7 +187,7 @@ class Task:
         # str representation including the address to the object
         # which is almost certainly going to be unique to a 
         # given run of the code
-        # For that reason, arguments passed in to an NDustrio task
+        # For that reason, arguments passed in to an ndustria task
         # must be able to be uniquely represented by a call to str()
         def append_args(target, args, kwargs):
             for a in args:
@@ -175,6 +197,7 @@ class Task:
                 target += str(k)+str(v)
             return target
 
+        # TODO: Is this actually a good idea? Whitespace changes code behavior in python
         # scrap the whitespace to prevent unnecessary 
         # re-queries
         source_no_ws = remove_all_whitespace(source)
