@@ -19,8 +19,8 @@ class Pipeline:
 
             # name the pipeline after the file that ran it w/o .py
             cls.instance.name = sys.argv[0].replace(".py","")
-            cls.instance.cache = Cache("./temp")
-            log(f"Created new Pipeline with cache located at {cls.instance.cache.path}")
+            cls.instance.cache = Cache()
+            log(f"---\nPipeline {cls.instance.name} created with cache located at {cls.instance.cache.path}\n---\n")
 
             # TODO: Put some more thought into whether we should be using COMM_WORLD
             cls.instance.comm = MPI.COMM_WORLD
@@ -58,6 +58,7 @@ class Pipeline:
             args, 
             kwargs, 
             self,
+            match=match,
             depends_on=dependencies)
         self.Tasks.append(new_task)
 
@@ -95,7 +96,8 @@ class Pipeline:
             kwargs, 
             self,
             dependencies,
-            root_proc_only)
+            root_proc_only,
+            match=match)
         self.Views.append(new_view)
 
         log(f"Added new View: {new_view}")
@@ -186,6 +188,8 @@ class Pipeline:
 
         num_waiting = len(waiting)
 
+        log(f"---\n Starting a run with {num_waiting} tasks.\n---\n")
+
         MAX_ITERATIONS = 10000
         iterations = 0
         while num_waiting > 0 and iterations < MAX_ITERATIONS:
@@ -265,10 +269,57 @@ class Pipeline:
         pipe = Pipeline()
 
         if pipe.isRoot():
-            pipe.cache.clear()
 
+            files_to_remove = []
+            for task in pipe.Tasks:
+                filepath = os.path.join(pipe.cache.path, task.getFilename())
+                if os.path.isfile(filepath):
+                    files_to_remove.append(filepath)
+
+            if len(files_to_remove) > 0:
+                files_to_remove = "\n".join(files_to_remove)
+            else:
+                print("Nothing found in the cache. No need to clear.")
+                return
+
+            i = 0
+            while True:
+                print(f"\n[Caution] About to delete the following files:\n{files_to_remove}")
+                answer = input("Is this ok? [y/n]\n")
+                if answer == "y":
+                    print("Ok. Deleting files.")
+                    break
+                elif answer == "n":
+                    print("Got it. Your files are safe. Exiting.")
+                    exit()
+                elif i == 3:
+                    print("Is there a cat walking on your keyboard right now?")
+                elif i == 4:
+                    print("My cats do that a lot.")
+                elif i == 5:
+                    print("Hi kitty! You are very cute! (=^･ω･^=)")
+                elif i >= 6:
+                    print("Ok thats enough. Can't risk you deleting your parent's files. Exiting.")
+                    exit()
+                else:
+                    print("Please answer with 'y' or 'n'")
+
+                i += 1
+            # end while True
+
+            for task in pipe.Tasks:
+                pipe.cache.remove(task)
+        pipe.comm.Barrier()
+        
+        # reset the Cache
+        pipe.cache.setPath()
+
+        # reset the state of all tasks 
         for task in pipe.Tasks:
             task.done = False
             task.result = None
 
-    
+    """Misc utility functions"""
+    def getAllHashCodes(self):
+        return [task.getHashCode() for task in self.Tasks]
+        

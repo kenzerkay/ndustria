@@ -1,6 +1,7 @@
 import pickle, os
 from tabulate import tabulate
 from Logger import log, error, setLogFile
+from dotenv import load_dotenv
 
 # including numpy support
 import numpy as np
@@ -9,7 +10,18 @@ CACHE_PATH = "./temp"
 
 class Cache:
 
-    def __init__(self, path):
+    def __init__(self, path=None):
+
+        if path == None:
+            load_dotenv()
+            path = os.environ.get("NDUSTRIA_CACHE_DIR")
+
+        # if the environment variable has not been set, prompt the user
+        # to run first time setup
+        if path == None or path == "":
+            print("\nHello! It looks like the NDUSTRIA_CACHE_DIR environment variable has not been set.\nPlease run ndustria's first time setup with 'ndustria -s'")
+            exit()
+
         self.setPath(path)
         self.headers = [
             "Task",
@@ -89,43 +101,11 @@ class Cache:
             pass
     # end remove
 
-    def clear(self):
-        
-        i = 0
-        while True:
-            print(f"\n[Caution] About to delete all files in {self.path}")
-            answer = input("Is this ok? [y/n]\n")
-            if answer == "y":
-                print("Ok. Deleting files.")
-                break
-            elif answer == "n":
-                print("Got it. Your files are safe. Exiting.")
-                exit()
-            elif i == 3:
-                print("Is there a cat walking on your keyboard right now?")
-            elif i == 4:
-                print("My cats do that a lot.")
-            elif i == 5:
-                print("Hi kitty! You are very cute! (=^･ω･^=)")
-            elif i == 6:
-                print("Ok thats enough. Can't risk you deleting your parent's files. Exiting.")
-                exit()
-            else:
-                print("Please answer with 'y' or 'n'")
+    def setPath(self, new_path=None):
 
-            i += 1
-        # end while True
-
-        # TODO: Rework this once the cache is better aware of which files 
-        # exist within it. The cache should specifically delete only those files
-        os.system(f"rm {self.path}/*")
-
-        # Re-initialize the cache with empty files
-        self.setPath(self.path)
-
-    # end clear
-
-    def setPath(self, new_path):
+        # if no new path, just reset the old one
+        if new_path == None:
+            new_path = self.path
 
         # Function to create file if does not exist
         def touch(file):
@@ -167,7 +147,7 @@ class Cache:
 
         try:
             with open(self.table_file, 'rb') as f:
-                log(f"Reloading cache state from {self.table_file}")
+                #log(f"Reloading cache state from {self.table_file}")
                 self.table = pickle.load(f)
         except EOFError as eof:
             # There's nothing in the file (probably because it was just created)

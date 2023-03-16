@@ -8,6 +8,7 @@ class Task:
         args, 
         kwargs, 
         pipeline, 
+        match="most_recent",
         depends_on=None
     ):
         
@@ -16,6 +17,7 @@ class Task:
         self.kwargs = kwargs
         self.pipeline = pipeline
         self.wallTime = 0
+        self.match = match
 
         # True if the Task has no dependencies
         self.indepedent = False
@@ -118,9 +120,15 @@ class Task:
         if len(self.depends_on) == 1:
             return self.depends_on[0].getResult()
         
-        all_results = []
-        for task in self.depends_on:
-            all_results.append( task.getResult() )
+        elif self.match == "most_recent":
+            all_results = {}
+            for task in self.depends_on:
+                all_results[task.user_function.__name__] =  task.getResult()
+        else:
+            all_results = []
+            for task in self.depends_on:
+                all_results.append( task.getResult() )
+
 
         return all_results
 
