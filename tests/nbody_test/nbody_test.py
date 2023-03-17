@@ -41,4 +41,4 @@ do_analysis()
 virialization()
 
 
-Pipeline.run()
+Pipeline.run(timeit=True, rerun=True)

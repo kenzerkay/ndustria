@@ -47,10 +47,8 @@ def time_test(number):
 
 
 if __name__ == "__main__":
-    for i in range(5):
-
-        three_second_function()
-        arbitrary_delay_function()
-        time_test()
+    three_second_function()
+    arbitrary_delay_function()
+    time_test()
 
     Pipeline.run(rerun=True, timeit=True)

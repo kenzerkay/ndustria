@@ -245,9 +245,13 @@ class Pipeline:
         # end Views while loop
 
         if pipe.timeit:
-            with open(f"{pipe.name}_timing.csv", "w") as timing_data:
+            # save it to cache for internal use
+            timing_data_file = os.path.join(pipe.cache.path, f"{pipe.name}_timing.csv")
+            with open(timing_data_file, "w") as timing_data:
                 for task in pipe.Tasks:
                     timing_data.write(f"{task.user_function.__name__}, {task.wallTime}\n")
+
+            
 
         log("All done.")
           
