@@ -51,4 +51,4 @@ if __name__ == "__main__":
     arbitrary_delay_function()
     time_test()
 
-    Pipeline.run(rerun=True, timeit=True)
+    Pipeline.run(rerun=True)

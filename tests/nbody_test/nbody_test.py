@@ -16,7 +16,7 @@ if RERUN:
     Pipeline.clearCache()
 
 # Simulation parameters
-N         = 100    # Number of particles
+N         = 500    # Number of particles
 t         = 0      # current time of the simulation
 tEnd      = 10.0   # time at which simulation ends
 dt        = 0.01   # timestep
@@ -41,4 +41,4 @@ do_analysis()
 virialization()
 
 
-Pipeline.run(timeit=True, rerun=True)
+Pipeline.run(timeit=True, rerun=True, memcheck=True)

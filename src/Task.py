@@ -1,4 +1,4 @@
-import inspect, hashlib, time
+import inspect, hashlib, time, tracemalloc
 from Logger import log, warn
 
 class Task:
@@ -16,8 +16,13 @@ class Task:
         self.args = args
         self.kwargs = kwargs
         self.pipeline = pipeline
-        self.wallTime = 0
         self.match = match
+
+        # Run statstics i.e. wall clock time and memory
+        self.wallTime = 0
+        self.initial_mem = 0
+        self.peak_mem = 0
+        self.final_mem = 0
 
         # True if the Task has no dependencies
         self.indepedent = False
@@ -85,21 +90,44 @@ class Task:
 
         log(f"Running {self}")
 
+        # TODO: 
+        # Should the dependency data be included in the memcheck?
+        # Do we want to extract the diagnostics out of the if statement?
+
         if self.indepedent:
             if self.pipeline.timeit: 
                 start = time.time()
+
+            if self.pipeline.memcheck:
+                
+                # python 3.8 doesn't have a tracemalloc.reset_peak function, so we're faking it with a tare
+                #tracemalloc.reset_peak()
+                self.initial_mem, peak_mem_tare = tracemalloc.get_traced_memory()
+                self.peak_mem = 0
+
+
             ###################################################################
             # Run the actual function
             ###################################################################
             self.result = self.user_function(*self.args, **self.kwargs)   
             
             if self.pipeline.timeit: 
-                self.wallTime = time.time() - start         
+                self.wallTime = time.time() - start
+
+            if self.pipeline.memcheck:
+                self.final_mem, peak_mem = tracemalloc.get_traced_memory()
+                self.peak_mem = peak_mem
+
         else:
             data = self.getDependencyData()
 
             if self.pipeline.timeit: 
                 start = time.time()
+
+            if self.pipeline.memcheck:
+                self.initial_mem, peak_mem_tare = tracemalloc.get_traced_memory()
+                self.peak_mem = peak_mem_tare
+
 
             ###################################################################
             # Run the actual function with data from its dependencies
@@ -108,6 +136,10 @@ class Task:
 
             if self.pipeline.timeit: 
                 self.wallTime = time.time() - start
+
+            if self.pipeline.memcheck:
+                self.final_mem, peak_mem = tracemalloc.get_traced_memory()
+                self.peak_mem = peak_mem
             
         ###################################################################
         # Save the result
@@ -116,6 +148,9 @@ class Task:
         self.done = True
 
     def getDependencyData(self):
+
+        if self.indepedent:
+            return None
 
         if len(self.depends_on) == 1:
             return self.depends_on[0].getResult()

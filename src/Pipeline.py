@@ -3,7 +3,7 @@ from Task import Task
 from Cache import Cache
 from View import View
 
-import os, sys
+import os, sys, tracemalloc
 from Logger import log, error
 
 from mpi4py import MPI
@@ -168,11 +168,13 @@ class Pipeline:
         rerun=False, 
         parallel=False,
         dryrun=False,
-        timeit=False ):
+        timeit=True,
+        memcheck=False ):
 
         pipe = Pipeline()
 
         pipe.timeit = timeit
+        pipe.memcheck = memcheck
         pipe.dryrun = dryrun
 
         if parallel:
@@ -180,6 +182,9 @@ class Pipeline:
 
         if rerun:
             pipe.clearCache()
+
+        if memcheck:
+            tracemalloc.start(25) # TODO: Move this to .env
 
         pipe.comm.Barrier()
 
@@ -251,7 +256,11 @@ class Pipeline:
                 for task in pipe.Tasks:
                     timing_data.write(f"{task.user_function.__name__}, {task.wallTime}\n")
 
-            
+        if pipe.memcheck:
+            memcheck_data_file = os.path.join(pipe.cache.path, f"{pipe.name}_memcheck.csv")
+            with open(memcheck_data_file, "w") as memcheck_data:
+                for task in pipe.Tasks:
+                    memcheck_data.write(f"{task.user_function.__name__}, {task.initial_mem}, {task.final_mem}, {task.peak_mem}\n")
 
         log("All done.")
           
