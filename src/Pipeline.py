@@ -1,4 +1,15 @@
-# Singleton class that contains the entire analysis pipeline
+"""Defines the Pipeline class that represents the full analysis pipeline
+
+A Pipeline is a singleton object that contains a list of Tasks and a list of Views
+When Pipeline.run() is called, the pipeline will attempt to execute any Tasks that 
+are indicated as ready by a call to Task.readyToRun(). A Task is ready if it either
+has no dependencies, or all its dependencies have completed. 
+Once all Tasks are complete, the Pipeline will then attempt to execute all its Views. 
+Once all Views are complete, the Pipeline is done and the program will exit.
+
+"""
+
+
 from Task import Task
 from Cache import Cache
 from View import View
@@ -8,10 +19,16 @@ from Logger import log, error
 
 from mpi4py import MPI
 
-class Pipeline:
 
-    Tasks = []
+
+class Pipeline:
+    """Singleton class that contains a list of Tasks and Views to execute as part of a data analysis pipeline"""
+
+    Tasks = [] 
+    """List of all Task objects in this Pipeline"""
+    
     Views = []
+    """List of all View objects in this Pipeline"""
 
     def __new__(cls):
         if not hasattr(cls, 'instance'):
@@ -28,6 +45,7 @@ class Pipeline:
         return cls.instance
 
     def __init__(self):
+        """This function intentionally left blank"""
         pass
 
     def addTask(self, 
@@ -37,7 +55,24 @@ class Pipeline:
         depends_on=None,
         match="most_recent"
     ):
-        """Factory function for creating all new Tasks"""
+        """Factory function for creating all new Tasks
+        
+        Arguments:
+        user_function -- A user defined function that represents one stage of an analysis pipeline
+        args -- a list of positional arguments to pass to user_function
+        kwargs -- a dictionary of keyword arguments to apss to user_function
+        depends_on -- a function, or list of functions that must be executed before this Task can be run
+                      If only one function is given, the return value of that function will be passed 
+                      as the first positional argument to user_function. If multiple functions with 
+                      different names are given, a dictionary keyed by function names will be passed
+                      as the first positional argument to user_function. If match="all", then 
+                      a list containing all return values (ordered by Task creation order) will be 
+                      passed as the first positional argument to user_function.
+        match -- a string that tells ndustria how to assign dependencies. 
+                 The options are:
+                 most_recent -- Finds a Task that matches the given function name that was most recently added to the Pipeline
+                 all -- Finds all Tasks that match the given function name
+        """
         # figure out which Task this Task should depend on, if any
         dependencies = None
         if depends_on != None:
@@ -75,7 +110,26 @@ class Pipeline:
         match="most_recent",
         root_proc_only=False
     ):
-        """Factory function for creating all new Views"""
+        """Factory function for creating all new Views
+        
+        Arguments:
+        user_function -- A user defined function that takes data created by a Task and produces a plot or other representation 
+                         of the data
+        args -- a list of positional arguments to pass to user_function
+        kwargs -- a dictionary of keyword arguments to apss to user_function
+        looks_at -- a function, or list of functions that must be executed before this View can be run
+                      If only one function is given, the return value of that function will be passed 
+                      as the first positional argument to user_function. If multiple functions with 
+                      different names are given, a dictionary keyed by function names will be passed
+                      as the first positional argument to user_function. If match="all", then 
+                      a list containing all return values (ordered by Task creation order) will be 
+                      passed as the first positional argument to user_function.
+        match -- a string that tells ndustria how to assign dependencies. 
+                 The options are:
+                 most_recent -- Finds a Task that matches the given function name that was most recently added to the Pipeline
+                 all -- Finds all Tasks that match the given function name
+        root_proc_only -- If True, prevents this View from being executed on any process that does not have rank = 0
+        """
 
         # figure out which Task this View should show
         dependencies = None
@@ -152,12 +206,15 @@ class Pipeline:
     Parallel utility functions
     """
     def getCommRank(self):
+        """Convenience method to get MPI rank"""
         return self.comm.Get_rank()
 
     def getCommSize(self):
+        """Convenience method to get MPI comm size"""
         return self.comm.Get_size()
     
     def isRoot(self):
+        """A process is considered the 'root' process iff rank == 0"""
         return self.comm.Get_rank() == 0
 
     """
@@ -170,6 +227,21 @@ class Pipeline:
         dryrun=False,
         timeit=True,
         memcheck=False ):
+        """
+        Runs a pipeline composed of ndustria Tasks and Views
+
+        Step 1. Write functions that represent each stage of your analysis pipeline
+        Step 2. Decorate your functions with the addTask and addView decorators as appropriate
+        Step 3. Call your decorated functions with desired arguments
+        Step 4. Call this function to run the pipeline
+
+        Keyword arguments:
+        rerun -- If True, removes any previous Task results from the cache. Causes every Task to run from scratch.
+        parallel -- If True, uses a round robin approach to assign Tasks to multiple processes and runs them in parallel
+        dryrun -- If True, skips running Tasks but does everything else, including creating log files. Used to test complex pipelines
+        timeit -- If True, keeps track of wallclock time of each Task. These data will be output to a csv file in the cache. Set to True by default due to low overhead
+        memcheck -- If True, collects initial, peak, and final memory usage of each Task. These data will be output to a csv file in the cache. Can have high overhead if you allocate a lot of small objects
+        """
 
         pipe = Pipeline()
 
@@ -277,6 +349,8 @@ class Pipeline:
 
     @staticmethod
     def printCacheInfo():
+        """Prints the cache info file to console. Not supported on Windows"""
+
         pipe = Pipeline()
 
         # because windows users can fucking die
@@ -284,6 +358,7 @@ class Pipeline:
 
     @staticmethod
     def printLog():
+        """Prints the log file to console. Not supported on Windows"""
         pipe = Pipeline()
 
         # because windows users can fucking die
@@ -291,6 +366,7 @@ class Pipeline:
 
     @staticmethod
     def clearCache():
+        """Deletes all results in the cache that match the Task list. Asks for permission first."""
         pipe = Pipeline()
 
         if pipe.isRoot():
@@ -344,7 +420,7 @@ class Pipeline:
             task.done = False
             task.result = None
 
-    """Misc utility functions"""
     def getAllHashCodes(self):
+        """Utility function that isn't actually being used for anything right now. Might delete later idk."""
         return [task.getHashCode() for task in self.Tasks]
         
