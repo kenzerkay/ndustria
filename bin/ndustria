@@ -38,7 +38,7 @@ ndustria -r
 ndustria --runtests
 """
 
-# NCD = Ndustria Cache Dir
+# NCD -> Ndustria Cache Dir
 NCD_ENV="NDUSTRIA_CACHE_DIR"
 default_ncd = "~/.ndustria_cache"
 

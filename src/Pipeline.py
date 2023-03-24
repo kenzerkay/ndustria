@@ -208,6 +208,15 @@ class Pipeline:
             for i, task in enumerate(run_this_iteration):
 
                 if parallel:
+                    # TODO: this works so long as the dependent Tasks end up 
+                    # running on the same process as their dependencies
+                    # otherwise this will fail
+                    # lots to consider in fixing this
+                    # it might be ok to distribute Task results to all processes
+                    # so long as results*comm_size is small compared to peak memory and that might be easier
+                    # than trying to associate particular Task dependency chains
+                    # with a particular process
+
                     # round robin distribute Tasks to processes
                     if i % pipe.getCommSize() == pipe.getCommRank():
                         print(f"[Rank {pipe.getCommRank()}] running:" + str(task))
@@ -258,6 +267,7 @@ class Pipeline:
 
         if pipe.memcheck:
             memcheck_data_file = os.path.join(pipe.cache.path, f"{pipe.name}_memcheck.csv")
+
             with open(memcheck_data_file, "w") as memcheck_data:
                 for task in pipe.Tasks:
                     memcheck_data.write(f"{task.user_function.__name__}, {task.initial_mem}, {task.final_mem}, {task.peak_mem}\n")
@@ -269,12 +279,14 @@ class Pipeline:
     def printCacheInfo():
         pipe = Pipeline()
 
+        # because windows users can fucking die
         os.system(f"cat {pipe.cache.info_file}")
 
     @staticmethod
     def printLog():
         pipe = Pipeline()
 
+        # because windows users can fucking die
         os.system(f"cat {pipe.cache.log_file}")
 
     @staticmethod
