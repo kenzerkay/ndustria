@@ -35,4 +35,4 @@ for i in range(5, 8):
     view_data()
 
 
-Pipeline.run(rerun=True)
+Pipeline.run(rerun=True, memcheck=True)
