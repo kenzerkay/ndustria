@@ -8,12 +8,6 @@ from nbody import (
     virialization
 )
 
-RERUN = True
-RERUN = False
-
-
-if RERUN:
-    Pipeline.clearCache()
 
 # Simulation parameters
 N         = 500    # Number of particles

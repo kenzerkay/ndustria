@@ -6,7 +6,7 @@ import time, random
 ###############################################################
 # IMPORTANT
 # This test exposes an important disadvantage of ndustria, 
-# which is that it relies on deterministic atomicity. 
+# which is that it relies on deterministic user functions. 
 # The three_second_function returns a random
 # number every time it executes, meaning that the function
 # does not return a unique result for a unique input.
