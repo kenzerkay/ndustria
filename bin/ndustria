@@ -1,0 +1,127 @@
+#!/usr/bin/env python
+
+import argparse, os, sys
+import matplotlib.pyplot as plt
+import numpy as np
+from dotenv import dotenv_values, load_dotenv
+
+usage_string = """
+This is a utility script for ndustria that performs some useful functions to help
+debug and monitor code pipelines. 
+
+Set up ndustria for the first time (saves path to cache dir in env file):
+ndustria -s
+ndustria --setup
+
+See what's in the cache:
+ndustria -c 
+ndustria --cache
+
+Make a plot of timing data (requires running with timeit=True):
+ndustria -t
+ndustria --timeit
+
+Make a plot of memory usage (requires running with memcheck=True):
+ndustria -m
+ndustria --memcheck
+
+See the log of the last run pipeline:
+ndustria -l
+ndustria --log
+
+If you want to run all of ndustria's unit tests:
+ndustria -r
+ndustria --runtests
+"""
+
+# NCD = Ndustria Cache Dir
+NCD_ENV="NDUSTRIA_CACHE_DIR"
+default_ncd = "~/.ndustria_cache"
+
+parser = argparse.ArgumentParser(
+    prog="ndustria",
+    usage=usage_string
+)
+parser.add_argument('-s', '--setup', action='store_true')
+parser.add_argument('-c', '--cache', action='store_true')
+parser.add_argument('-t', '--timeit', action='store', type=str)
+parser.add_argument('-m', '--memcheck', action='store_true')
+parser.add_argument('-l', '--log', action='store_true')
+parser.add_argument('-r', '--runtests', action='store_true')
+
+args = parser.parse_args()
+
+if (args.setup):
+
+    config = dotenv_values()
+
+    if NCD_ENV in config:
+
+        cache_dir = os.path.abspath(config[NCD_ENV])
+
+    else:
+        print("Performing first time setup...")
+
+        cache_dir = input(f"Please let me know where you'd like ndustria to keep cached files (default: {default_ncd})")
+        cache_dir = cache_dir.strip()
+        if cache_dir == "":
+            cache_dir = os.path.expanduser(default_ncd)
+
+        program_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir, os.pardir))
+        env_file = os.path.join(program_dir, ".env")
+        print(f"Creating environment file at {env_file}")
+        with open(env_file, "w") as ef:
+            ef.write(f"{NCD_ENV}={cache_dir}\n")
+
+        
+    if os.path.exists(cache_dir):
+        print(f"Found ndustria cache at {cache_dir}")
+    else:
+        print(f"Creating new directory at {cache_dir}")
+        os.mkdir(cache_dir)
+
+    print("ndustria is ready to run!")
+
+else:
+    config = dotenv_values()
+
+    if NCD_ENV not in config:
+
+        print("\nHello! It looks like the NDUSTRIA_CACHE_DIR environment variable has not been set.\nPlease run ndustria's first time setup with 'ndustria -s'")
+        exit()
+
+
+load_dotenv()
+cache_dir = os.environ.get(NCD_ENV)
+
+if (args.log):
+    log_file = os.path.join(cache_dir, "last_run.log")
+    os.system(f"cat {log_file}")
+
+if (args.cache):
+    cache_info = os.path.join(cache_dir, "cache_info")
+    os.system(f"cat {cache_info}")
+
+
+if (args.timeit):
+
+    timing_data_file = os.path.join(cache_dir, f"{args.timeit}_timing.csv")
+    timing_data = {}
+    with open(timing_data_file, "r") as tdf:
+        for line in tdf.readlines():
+            vals = line.split(",")
+
+            func_name = vals[0].strip()
+            time_seconds = float(vals[1])
+            if func_name in timing_data:
+                timing_data[func_name] += time_seconds
+            else:
+                timing_data[func_name] = time_seconds
+
+    fig, ax = plt.subplots()
+    index = np.arange(len(timing_data.keys()))
+    ax.bar(timing_data.keys(), timing_data.values(), 0.4)
+    ax.set_ylabel("Time (s)")
+
+    plt.title("Time spent in each function")
+    plt.show()

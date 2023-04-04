@@ -1,12 +1,6 @@
 from ndustria import AddTask, AddView, Pipeline
 import numpy as np
 
-RERUN = True
-#RERUN = False
-
-if RERUN:
-    Pipeline.clearCache()
-
 @AddTask()
 def create_random_array(N=10):
     arr = np.random.rand(N)
@@ -39,7 +33,7 @@ def do_std(data):
     }
     return result
 
-@AddView(views=[do_sum, do_mean, do_std])
+@AddView(looks_at=[do_sum, do_mean, do_std])
 def view_data(dataDict):
 
     sum_data = dataDict["do_sum"]
@@ -64,4 +58,4 @@ for i in range(5, 8):
     view_data()
 
 
-Pipeline.run()
+Pipeline.run(rerun=True)

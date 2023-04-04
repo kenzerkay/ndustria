@@ -390,4 +390,5 @@ def softening_length_test(all_data):
 		return *particles,
 
 	anim = animation.FuncAnimation(fig, update, interval=3, frames=sim.Nt)
+	print("Showing analysis result...")
 	plt.show(block=True)

@@ -22,7 +22,7 @@ def do_analysis(data):
     }
     return result
 
-@AddView(views=do_analysis)
+@AddView(looks_at=do_analysis)
 def view_data(data):
     print(f"""
 Viewing data for {data['length']} random numbers: 

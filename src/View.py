@@ -8,7 +8,8 @@ class View:
             args, kwargs, 
             pipeline, 
             looks_at, 
-            root_proc_only
+            root_proc_only,
+            match="most_recent"
         ):
         self.user_function = user_function
         self.args = args
@@ -16,6 +17,7 @@ class View:
         self.pipeline = pipeline
         self.tasks = looks_at
         self.root_proc_only = root_proc_only
+        self.match = match
         self.shown = False
 
         # name of the file where this Task's data is stored
@@ -82,8 +84,14 @@ class View:
         if len(self.tasks) == 1:
             return self.tasks[0].getResult()
         
-        all_results = []
-        for task in self.tasks:
-            all_results.append( task.getResult() )
+        elif self.match == "most_recent":
+            all_results = {}
+            for task in self.tasks:
+                all_results[task.user_function.__name__] =  task.getResult()
+        else:
+            all_results = []
+            for task in self.tasks:
+                all_results.append( task.getResult() )
+
 
         return all_results
