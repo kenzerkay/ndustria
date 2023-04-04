@@ -1,5 +1,5 @@
 import inspect, hashlib
-from Logger import log, warn
+from .Logger import log, warn
 
 class Task:
 

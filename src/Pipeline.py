@@ -1,10 +1,10 @@
 # Singleton class that contains the entire analysis pipeline
-from Task import Task
-from Cache import Cache
-from View import View
+from .Task import Task
+from .Cache import Cache
+from .View import View
 
 import os
-from Logger import log, error
+from .Logger import log, error
 
 from mpi4py import MPI
 
