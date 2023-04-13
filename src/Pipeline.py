@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """Defines the Pipeline class that represents the full analysis pipeline
 
 A Pipeline is a singleton object that contains a list of Tasks and a list of Views

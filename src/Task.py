@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """A Task is a the smallest unit of work performed by an analysis Pipeline
 
 A Task is a the smallest unit of work performed by an analysis Pipeline. 
