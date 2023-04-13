@@ -10,7 +10,7 @@ from nbody import (
 
 
 # Simulation parameters
-N         = 500    # Number of particles
+N         = 100    # Number of particles
 t         = 0      # current time of the simulation
 tEnd      = 10.0   # time at which simulation ends
 dt        = 0.01   # timestep
@@ -24,7 +24,7 @@ sim = Simulation(
     tEnd=tEnd,
     dt=dt,
     softening=softening,
-    G=1.0,
+    G=G,
     random_seed=random_seed
 )
 
@@ -35,4 +35,4 @@ do_analysis()
 virialization()
 
 
-Pipeline.run(timeit=True, rerun=True, memcheck=True)
+Pipeline.run(timeit=True, memcheck=True)
