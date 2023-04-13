@@ -3,7 +3,7 @@
 """
 
 import functools
-from Pipeline import Pipeline
+from .Pipeline import Pipeline
 
 def AddTask(
     depends_on=None,

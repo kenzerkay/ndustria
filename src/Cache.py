@@ -1,6 +1,6 @@
 import pickle, os
 from tabulate import tabulate
-from Logger import log, error, setLogFile
+from .Logger import log, error, setLogFile
 from dotenv import load_dotenv
 
 # including numpy support

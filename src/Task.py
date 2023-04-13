@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """A Task is a the smallest unit of work performed by an analysis Pipeline
 
 A Task is a the smallest unit of work performed by an analysis Pipeline. 
@@ -30,7 +31,7 @@ and the Task will be rerun.
 """
 
 import inspect, hashlib, time, tracemalloc
-from Logger import log, warn
+from .Logger import log, warn
 
 class Task:
     """A Task is a the smallest unit of work performed by an analysis Pipeline"""

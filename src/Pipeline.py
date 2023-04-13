@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """Defines the Pipeline class that represents the full analysis pipeline
 
 A Pipeline is a singleton object that contains a list of Tasks and a list of Views
@@ -10,12 +11,11 @@ Once all Views are complete, the Pipeline is done and the program will exit.
 """
 
 
-from Task import Task
-from Cache import Cache
-from View import View
-
+from .Task import Task
+from .Cache import Cache
+from .View import View
+from .Logger import log, error
 import os, sys, tracemalloc
-from Logger import log, error
 
 from mpi4py import MPI
 
