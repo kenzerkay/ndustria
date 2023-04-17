@@ -113,11 +113,6 @@ def AddView(
     Views can also be run soley on the root process (rank=0) if running in parallel.
 
     Arguments:
-    looks_at -- a function, or list of functions whose Task results are represented by this View
-    match -- a string that tells ndustria how to assign dependencies. 
-             The options are:
-             most_recent -- Finds a Task that matches the given function name that was most recently added to the Pipeline
-             all -- Finds all Tasks that match the given function name
     root_proc_only -- Runs this View only on the root process (rank = 0)
     """
     pipe = Pipeline()
