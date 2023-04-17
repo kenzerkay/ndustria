@@ -47,11 +47,6 @@ class Task:
         args -- A list of positional arguments to pass to the function. 
         kwargs -- A list of keyword arguments to pass to the function.
         pipeline -- A reference to the pipeline this Task belongs to. Not strictly necessary since the Pipeline is a static singleton but whatev
-        match -- a string that tells ndustria how to assign dependencies. 
-                 The options are:
-                 most_recent -- Finds a Task that matches the given function name that was most recently added to the Pipeline
-                 all -- Finds all Tasks that match the given function name
-        depends_on -- A function, or list of functions whose Tasks must run before this Task can be run 
         """
         
         self.user_function = user_function
@@ -175,45 +170,9 @@ class Task:
         self.pipeline.cache.save(self)
         self.done = True
 
-    # def getDependencyData(self):
-    #     """Searches through its dependencies and gathers their results. 
-        
-    #     This method has different behavior depending on how many dependencies the Task has.
-    #     If no dependencies, returns None.
-    #     If one dependency, returns just the result of that Task
-    #     If multiple dependencies, the behavior depends on the match strategy used.
-    #         If the 'most_recent' strategy was used, it will return a dictionary keyed by function names 
-    #         where the values are the results of those functions
-    #         If the 'all' strategy was used, then it will return a list of Task results with the same 
-    #         ordering as the Pipeline's Task list.
-    #     """
-
-    #     if self.indepedent:
-    #         return None
-
-    #     if len(self.depends_on) == 1:
-    #         return self.depends_on[0].getResult()
-        
-    #     elif self.match == "most_recent":
-    #         all_results = {}
-    #         for task in self.depends_on:
-    #             all_results[task.user_function.__name__] =  task.getResult()
-    #     else:
-    #         all_results = []
-    #         for task in self.depends_on:
-    #             all_results.append( task.getResult() )
-
-
-    #     return all_results
-
     def getFilename(self):
         """Returns the filename in the cache that this Task saves to. May not necessarily be the same as the Task hashcode.
-        
-        I'm leaving open the possibility that the user may want to save a Task result to a specific file rather than the 
-        hash coded file in the cache. That's what this function is for.
         """
-
-        
         return self.getHashCode()
 
     def getResult(self):

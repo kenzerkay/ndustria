@@ -58,30 +58,7 @@ class Pipeline:
         user_function -- A user defined function that represents one stage of an analysis pipeline
         args -- a list of positional arguments to pass to user_function
         kwargs -- a dictionary of keyword arguments to apss to user_function
-        depends_on -- a function, or list of functions that must be executed before this Task can be run
-                      If only one function is given, the return value of that function will be passed 
-                      as the first positional argument to user_function. If multiple functions with 
-                      different names are given, a dictionary keyed by function names will be passed
-                      as the first positional argument to user_function. If match="all", then 
-                      a list containing all return values (ordered by Task creation order) will be 
-                      passed as the first positional argument to user_function.
-        match -- a string that tells ndustria how to assign dependencies. 
-                 The options are:
-                 most_recent -- Finds a Task that matches the given function name that was most recently added to the Pipeline
-                 all -- Finds all Tasks that match the given function name
         """
-        # figure out which Task this Task should depend on, if any
-        # dependencies = None
-        # if depends_on != None:
-
-        #     if match == "most_recent":
-        #         dependencies = self.MatchMostRecent(depends_on)
-        #     elif match == "all":
-        #         dependencies = self.MatchAll(depends_on)
-        #     else:
-        #         error(f"No dependency match solution for {match}")
-
-
 
         # create the new Task and append it to the Pipeline
         new_task = Task(
@@ -113,31 +90,8 @@ class Pipeline:
                          of the data
         args -- a list of positional arguments to pass to user_function
         kwargs -- a dictionary of keyword arguments to apss to user_function
-        looks_at -- a function, or list of functions that must be executed before this View can be run
-                      If only one function is given, the return value of that function will be passed 
-                      as the first positional argument to user_function. If multiple functions with 
-                      different names are given, a dictionary keyed by function names will be passed
-                      as the first positional argument to user_function. If match="all", then 
-                      a list containing all return values (ordered by Task creation order) will be 
-                      passed as the first positional argument to user_function.
-        match -- a string that tells ndustria how to assign dependencies. 
-                 The options are:
-                 most_recent -- Finds a Task that matches the given function name that was most recently added to the Pipeline
-                 all -- Finds all Tasks that match the given function name
         root_proc_only -- If True, prevents this View from being executed on any process that does not have rank = 0
-        """
-
-        # figure out which Task this View should show
-        # dependencies = None
-        # if looks_at != None:
-
-        #     if match == "most_recent":
-        #         dependencies = self.MatchMostRecent(looks_at)
-        #     elif match == "all":
-        #         dependencies = self.MatchAll(looks_at)
-        #     else:
-        #         error(f"No dependency match solution for {match}")
-            
+        """ 
 
         # create the new Task and append it to the Pipeline
         new_view = View(
@@ -149,51 +103,6 @@ class Pipeline:
         self.Views.append(new_view)
 
         log(f"Added new View: {new_view}")
-
-
-    """ 
-    Dependency matching functions
-    These search the Task list for Tasks that match the function specified
-    in the depends_on field
-    """
-    def MatchMostRecent(self, depends_on):
-        """First and default Dependency strategy. Find the most recently added task that matches the depends_on function(s) """
-
-        if not isinstance(depends_on, list):
-            depends_on = [depends_on]
-
-        dependencies = []
-        for func in depends_on:
-            # loop over the list in reverse since we want the 
-            # most recently added 
-            task = None
-            task_found = False
-            for i in range(len(self.Tasks)-1, -1, -1):
-                task = self.Tasks[i]
-                if task.user_function.__name__ == func.__name__:
-                    task_found = True
-                    dependencies.append(task)
-                    break
-            if not task_found:
-                error(f"No matching Task found for '{func.__name__}'")
-        return dependencies
-    
-    def MatchAll(self, depends_on):
-        """ Find all Tasks that match the depends_on function(s) """
-
-        if not isinstance(depends_on, list):
-            depends_on = [depends_on]
-
-        dependencies = []
-        task_found = False # set to True if at least one Task is found
-        for func in depends_on:
-            for task in self.Tasks:
-                if task.user_function.__name__ == func.__name__:
-                    dependencies.append(task)
-                    task_found = True
-            if not task_found:
-                error(f"No matching Task found for '{func.__name__}'")
-        return dependencies
 
 
     """
@@ -414,7 +323,4 @@ class Pipeline:
             task.done = False
             task.result = None
 
-    def getAllHashCodes(self):
-        """Utility function that isn't actually being used for anything right now. Might delete later idk."""
-        return [task.getHashCode() for task in self.Tasks]
         
