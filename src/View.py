@@ -1,4 +1,4 @@
-
+from .Task import Task
 
 class View:
 
@@ -7,17 +7,14 @@ class View:
             user_function, 
             args, kwargs, 
             pipeline, 
-            looks_at, 
-            root_proc_only,
-            match="most_recent"
+            root_proc_only
         ):
         self.user_function = user_function
         self.args = args
         self.kwargs = kwargs
         self.pipeline = pipeline
-        self.tasks = looks_at
+        self.tasks = []
         self.root_proc_only = root_proc_only
-        self.match = match
         self.shown = False
 
         # name of the file where this Task's data is stored
@@ -25,6 +22,11 @@ class View:
 
         # keep a hash for every Task so we know whether to invalidate the cache
         self.hashcode = ""
+
+        for a in self.args:
+            if Task.isTask(a):
+                self.tasks.append(a)
+
 
     def __str__(self):
         debug_string = f"{self.user_function.__name__}("
@@ -61,8 +63,22 @@ class View:
         if self.root_proc_only and not self.pipeline.isRoot():
             return
         
-        data = self.getDependencyData()
-        self.user_function(data, *self.args, **self.kwargs)
+        arguments = []
+        for a in self.args:
+
+            arg_is_task = Task.isTask(a)
+
+            arg_is_list_of_tasks = type(a) == list and Task.isTask(a[0])
+
+            if arg_is_task:
+                arguments.append(a.getResult())
+            elif arg_is_list_of_tasks: 
+                new_list = [t.getResult() for t in a]
+                arguments.append(new_list)
+            else:
+                arguments.append(a)
+
+        self.user_function(*arguments, **self.kwargs)
             
         self.shown = True
 
@@ -79,19 +95,19 @@ class View:
         return True
 
 
-    def getDependencyData(self):
+    # def getDependencyData(self):
 
-        if len(self.tasks) == 1:
-            return self.tasks[0].getResult()
+    #     if len(self.tasks) == 1:
+    #         return self.tasks[0].getResult()
         
-        elif self.match == "most_recent":
-            all_results = {}
-            for task in self.tasks:
-                all_results[task.user_function.__name__] =  task.getResult()
-        else:
-            all_results = []
-            for task in self.tasks:
-                all_results.append( task.getResult() )
+    #     elif self.match == "most_recent":
+    #         all_results = {}
+    #         for task in self.tasks:
+    #             all_results[task.user_function.__name__] =  task.getResult()
+    #     else:
+    #         all_results = []
+    #         for task in self.tasks:
+    #             all_results.append( task.getResult() )
 
 
-        return all_results
+    #     return all_results

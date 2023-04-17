@@ -7,7 +7,7 @@ def create_random_array(N=10):
     arr = np.random.rand(N)
     return arr
 
-@AddTask(depends_on=create_random_array)
+@AddTask()
 def do_analysis(data):
 
     result = {
@@ -18,7 +18,7 @@ def do_analysis(data):
     }
     return result
 
-@AddView(looks_at=do_analysis)
+@AddView()
 def view_data(data):
     print(f"""
 Viewing data for {data['length']} random numbers: 
@@ -30,9 +30,9 @@ Viewing data for {data['length']} random numbers:
 
 for i in range(5, 8):
     N = 10**i
-    create_random_array(N=N)
-    do_analysis()
-    view_data()
+    random_arrays = create_random_array(N=N)
+    analysis = do_analysis(random_arrays)
+    view_data(analysis)
 
 
 Pipeline.run(rerun=True, memcheck=True)

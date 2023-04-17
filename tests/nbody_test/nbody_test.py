@@ -28,11 +28,11 @@ sim = Simulation(
     random_seed=random_seed
 )
 
-create_initial_conditions(sim)
-run_simulation(sim)
-do_analysis()
+ics = create_initial_conditions(sim)
+sim_data = run_simulation(ics, sim)
+analysis = do_analysis(sim_data)
 #view_simulation()
-virialization()
+virialization(analysis)
 
 
 Pipeline.run(timeit=True, memcheck=True)

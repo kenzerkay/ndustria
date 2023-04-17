@@ -30,14 +30,14 @@ def three_second_function():
 
     return rand_int
 
-@AddTask(depends_on=three_second_function)
+@AddTask()
 def arbitrary_delay_function(number):
 
     time.sleep(number)
 
     return number
 
-@AddView(looks_at=arbitrary_delay_function)
+@AddView()
 def time_test(number):
 
     # we'll know how long it ran when the view runs
@@ -47,8 +47,8 @@ def time_test(number):
 
 
 if __name__ == "__main__":
-    three_second_function()
-    arbitrary_delay_function()
-    time_test()
+    number = three_second_function()
+    arbitrary_number = arbitrary_delay_function(number)
+    time_test(arbitrary_number)
 
     Pipeline.run(rerun=True)

@@ -77,12 +77,10 @@ def AddTask(
         @functools.wraps(user_function)
         def inner_wrapper(*args, **kwargs):
 
-            pipe.addTask(
+            return pipe.addTask(
                 user_function, 
                 args, 
-                kwargs, 
-                depends_on=depends_on,
-                match=match
+                kwargs
             )
 
         return inner_wrapper
@@ -132,9 +130,7 @@ def AddView(
                 user_function, 
                 args, 
                 kwargs, 
-                looks_at,
-                match=match,
-                root_proc_only=root_proc_only
+                looks_at
             )
 
         return inner_wrapper

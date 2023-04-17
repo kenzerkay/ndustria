@@ -38,9 +38,7 @@ class Task:
         user_function, 
         args, 
         kwargs, 
-        pipeline, 
-        match="most_recent",
-        depends_on=None
+        pipeline
     ):
         """Initializes a new Task. Should not be called directly. Instead use the @AddTask decorator.
 
@@ -60,7 +58,6 @@ class Task:
         self.args = args
         self.kwargs = kwargs
         self.pipeline = pipeline
-        self.match = match
 
         # Run statstics i.e. wall clock time and memory
         self.wallTime = 0
@@ -69,18 +66,18 @@ class Task:
         self.final_mem = 0
 
         # True if the Task has no dependencies
-        self.indepedent = False
+        self.indepedent = True
 
-        if isinstance(depends_on, list):
-            self.depends_on = depends_on
-        elif depends_on == None:
-            self.depends_on = []
-            self.indepedent = True
-        else :
-            self.depends_on = [depends_on]
+        # any arguments that are Task objects are dependencies that need to be
+        # tracked by the dependencies list
+        self.dependencies = []
+        for a in self.args:
+            if Task.isTask(a):
+                self.indepedent = False
+                self.dependencies.append(a)
 
-        # name of the file where this Task's data is stored
-        self.filename = ""
+        # name of the file or files where this Task's data is stored
+        self.filename = None
 
         # assign this Task its hashcode
         self.hashcode = ""
@@ -124,7 +121,7 @@ class Task:
             debug_string += ")"
 
         if not self.indepedent:
-            debug_string += f" which depends on {str(self.depends_on)}"
+            debug_string += f" which depends on {str(self.dependencies)}"
 
         return debug_string
 
@@ -137,86 +134,77 @@ class Task:
 
         log(f"Running {self}")
 
-        # TODO: 
-        # Should the dependency data be included in the memcheck?
-        # Do we want to extract the diagnostics out of the if statement?
+        arguments = []
+        for a in self.args:
 
-        if self.indepedent:
-            if self.pipeline.timeit: 
-                start = time.time()
+            arg_is_task = Task.isTask(a)
 
-            if self.pipeline.memcheck:
-                
-                self.initial_mem, self.peak_mem = tracemalloc.get_traced_memory()
+            arg_is_list_of_tasks = type(a) == list and Task.isTask(a[0])
 
-            ###################################################################
-            # Run the actual function
-            ###################################################################
-            self.result = self.user_function(*self.args, **self.kwargs)   
-            
-            if self.pipeline.timeit: 
-                self.wallTime = time.time() - start
+            if arg_is_task:
+                arguments.append(a.getResult())
+            elif arg_is_list_of_tasks: 
+                new_list = [t.getResult() for t in a]
+                arguments.append(new_list)
+            else:
+                arguments.append(a)
 
-            if self.pipeline.memcheck:
-                self.final_mem, self.peak_mem = tracemalloc.get_traced_memory()
+        if self.pipeline.timeit: 
+            start = time.time()
 
-        else:
-            data = self.getDependencyData()
+        if self.pipeline.memcheck:
+            self.initial_mem, self.peak_mem = tracemalloc.get_traced_memory()
 
-            if self.pipeline.timeit: 
-                start = time.time()
+        ###################################################################
+        # Run the actual function
+        ###################################################################
+        self.result = self.user_function(*arguments, **self.kwargs)   
+        
+        if self.pipeline.timeit: 
+            self.wallTime = time.time() - start
 
-            if self.pipeline.memcheck:
-                self.initial_mem, self.peak_mem = tracemalloc.get_traced_memory()
+        if self.pipeline.memcheck:
+            self.final_mem, self.peak_mem = tracemalloc.get_traced_memory()
 
-
-            ###################################################################
-            # Run the actual function with data from its dependencies
-            ###################################################################
-            self.result = self.user_function(data, *self.args, **self.kwargs)
-
-            if self.pipeline.timeit: 
-                self.wallTime = time.time() - start
-
-            if self.pipeline.memcheck:
-                self.final_mem, self.peak_mem = tracemalloc.get_traced_memory()
+       
             
         ###################################################################
         # Save the result
         ###################################################################
+
         self.pipeline.cache.save(self)
         self.done = True
 
-    def getDependencyData(self):
-        """Searches through its dependencies and gathers their results. 
+    # def getDependencyData(self):
+    #     """Searches through its dependencies and gathers their results. 
         
-        This method has different behavior depending on how many dependencies the Task has.
-        If no dependencies, returns None.
-        If one dependency, returns just the result of that Task
-        If multiple dependencies, the behavior depends on the match strategy used.
-            If the 'most_recent' strategy was used, it will return a dictionary keyed by function names 
-            where the values are the results of those functions
-            If the 'all' strategy was used, then it will return a list of Task results with the same 
-            ordering as the Pipeline's Task list.
-        """
+    #     This method has different behavior depending on how many dependencies the Task has.
+    #     If no dependencies, returns None.
+    #     If one dependency, returns just the result of that Task
+    #     If multiple dependencies, the behavior depends on the match strategy used.
+    #         If the 'most_recent' strategy was used, it will return a dictionary keyed by function names 
+    #         where the values are the results of those functions
+    #         If the 'all' strategy was used, then it will return a list of Task results with the same 
+    #         ordering as the Pipeline's Task list.
+    #     """
 
-        if self.indepedent:
-            return None
+    #     if self.indepedent:
+    #         return None
 
-        if len(self.depends_on) == 1:
-            return self.depends_on[0].getResult()
+    #     if len(self.depends_on) == 1:
+    #         return self.depends_on[0].getResult()
         
-        elif self.match == "most_recent":
-            all_results = {}
-            for task in self.depends_on:
-                all_results[task.user_function.__name__] =  task.getResult()
-        else:
-            all_results = []
-            for task in self.depends_on:
-                all_results.append( task.getResult() )
+    #     elif self.match == "most_recent":
+    #         all_results = {}
+    #         for task in self.depends_on:
+    #             all_results[task.user_function.__name__] =  task.getResult()
+    #     else:
+    #         all_results = []
+    #         for task in self.depends_on:
+    #             all_results.append( task.getResult() )
 
 
-        return all_results
+    #     return all_results
 
     def getFilename(self):
         """Returns the filename in the cache that this Task saves to. May not necessarily be the same as the Task hashcode.
@@ -225,10 +213,8 @@ class Task:
         hash coded file in the cache. That's what this function is for.
         """
 
-        if self.filename != "":
-            return self.filename
-        else:
-            return self.getHashCode()
+        
+        return self.getHashCode()
 
     def getResult(self):
         """ Gets the result of this task if one exists. Will return None if no result exists.
@@ -254,7 +240,7 @@ class Task:
         if self.indepedent:
             return True
         
-        for task in self.depends_on:
+        for task in self.dependencies:
             if not task.done:
                 return False
         return True
@@ -310,7 +296,7 @@ class Task:
         # if we have dependencies, add the hashcodes/filenames of those dependencies
         else:
             add_hashes = ""
-            for task in self.depends_on:
+            for task in self.dependencies:
                 add_hashes += task.getHashCode()
             
             target = append_args(source_no_ws+add_hashes, self.args, self.kwargs)
@@ -322,3 +308,9 @@ class Task:
 
         #debug(f"Created hash {hash} for {self} from string {target}")
         return hash
+    
+
+    @staticmethod
+    def isTask(task):
+
+        return task.__class__.__name__ == "Task"

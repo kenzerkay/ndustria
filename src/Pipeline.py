@@ -50,9 +50,7 @@ class Pipeline:
     def addTask(self, 
         user_function, 
         args, 
-        kwargs, 
-        depends_on=None,
-        match="most_recent"
+        kwargs
     ):
         """Factory function for creating all new Tasks
         
@@ -73,15 +71,15 @@ class Pipeline:
                  all -- Finds all Tasks that match the given function name
         """
         # figure out which Task this Task should depend on, if any
-        dependencies = None
-        if depends_on != None:
+        # dependencies = None
+        # if depends_on != None:
 
-            if match == "most_recent":
-                dependencies = self.MatchMostRecent(depends_on)
-            elif match == "all":
-                dependencies = self.MatchAll(depends_on)
-            else:
-                error(f"No dependency match solution for {match}")
+        #     if match == "most_recent":
+        #         dependencies = self.MatchMostRecent(depends_on)
+        #     elif match == "all":
+        #         dependencies = self.MatchAll(depends_on)
+        #     else:
+        #         error(f"No dependency match solution for {match}")
 
 
 
@@ -91,9 +89,7 @@ class Pipeline:
             user_function, 
             args, 
             kwargs, 
-            self,
-            match=match,
-            depends_on=dependencies)
+            self)
         self.Tasks.append(new_task)
 
         if new_task.done:
@@ -101,12 +97,13 @@ class Pipeline:
         else:
             log(f"Added new Task: {new_task}")
 
+
+        return new_task
+
     def addView(self, 
         user_function, 
         args, 
-        kwargs, 
-        looks_at,
-        match="most_recent",
+        kwargs,
         root_proc_only=False
     ):
         """Factory function for creating all new Views
@@ -131,15 +128,15 @@ class Pipeline:
         """
 
         # figure out which Task this View should show
-        dependencies = None
-        if looks_at != None:
+        # dependencies = None
+        # if looks_at != None:
 
-            if match == "most_recent":
-                dependencies = self.MatchMostRecent(looks_at)
-            elif match == "all":
-                dependencies = self.MatchAll(looks_at)
-            else:
-                error(f"No dependency match solution for {match}")
+        #     if match == "most_recent":
+        #         dependencies = self.MatchMostRecent(looks_at)
+        #     elif match == "all":
+        #         dependencies = self.MatchAll(looks_at)
+        #     else:
+        #         error(f"No dependency match solution for {match}")
             
 
         # create the new Task and append it to the Pipeline
@@ -148,9 +145,7 @@ class Pipeline:
             args, 
             kwargs, 
             self,
-            dependencies,
-            root_proc_only,
-            match=match)
+            root_proc_only)
         self.Views.append(new_view)
 
         log(f"Added new View: {new_view}")

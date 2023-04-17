@@ -17,6 +17,7 @@ softening = 0.1    # softening length
 G         = 1.0    # Newton's Gravitational Constant
 random_seed = 91415 # date of first gravitational wave detection
 
+analysis_results = []
 for soft in [0.5, 0.1, 0.001]:
 
     sim = Simulation(
@@ -28,12 +29,12 @@ for soft in [0.5, 0.1, 0.001]:
         random_seed=random_seed
     )
 
-    create_initial_conditions(sim)
-    run_simulation(sim)
-    do_analysis()
+    ics = create_initial_conditions(sim)
+    sim_data = run_simulation(ics, sim)
+    analysis_results.append(do_analysis(sim_data)) 
 # end main loop
 
-softening_length_test()
+softening_length_test(analysis_results)
 
 
-Pipeline.run(rerun=True, parallel=True)
+Pipeline.run(parallel=True, rerun=True)

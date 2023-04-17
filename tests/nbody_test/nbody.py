@@ -113,7 +113,7 @@ def create_initial_conditions(sim):
 	return result
 	
 
-@AddTask(depends_on=create_initial_conditions)
+@AddTask()
 def run_simulation(initial_conditions, sim ):
 	""" N-body simulation """
 
@@ -152,7 +152,7 @@ def run_simulation(initial_conditions, sim ):
 	print("Simulation done.")
 	return sim
 		
-@AddTask(depends_on=run_simulation)
+@AddTask()
 def do_analysis( sim ):
 	"""
 	Get kinetic energy (KE) and potential energy (PE) of simulation
@@ -199,7 +199,7 @@ def do_analysis( sim ):
 	print("Analysis Done                                    ")
 	return sim		
 
-@AddView(looks_at=do_analysis)
+@AddView()
 def view_simulation(sim):
 
 	# prep figure
@@ -243,7 +243,7 @@ def view_simulation(sim):
 	
 	
 # This is mostly for demos but can also be used for testing
-@AddView(looks_at=do_analysis)
+@AddView()
 def virialization(sim):
 
 	fig = plt.figure(figsize=(8,10))
@@ -302,7 +302,7 @@ def virialization(sim):
 	
 
 
-@AddView(looks_at=do_analysis, match="all", root_proc_only=True)
+@AddView(root_proc_only=True)
 def softening_length_test(all_data):
 
 	fig = plt.figure(figsize=(24,10))
