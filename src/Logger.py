@@ -1,5 +1,6 @@
 import os
 DEBUG = True
+VERBOSE = True
 LOG_FILE = ""
 # Convenience debugger function
 # prints stuff out to log and console with [Debug] in front of it 
@@ -12,6 +13,9 @@ def debug(args):
 
     msg = "[Debug] " + str(args)
     log(msg)
+
+    if VERBOSE == True:
+        print(msg)
     
 
 # Convenience debugger function
@@ -21,6 +25,10 @@ def warn(args):
     msg = "[Warning] " + str(args)
     log(msg)
 
+    if VERBOSE == True:
+        print(msg)
+
+
 # Convenience error function
 # for when you need to die but also try to explain to the user 
 # why you died
@@ -29,6 +37,7 @@ def error(args):
 
     msg = "[Error] " + str(args)
     log(msg)
+    print(msg)
     exit()
 
 

@@ -94,20 +94,3 @@ class View:
                 return False
         return True
 
-
-    # def getDependencyData(self):
-
-    #     if len(self.tasks) == 1:
-    #         return self.tasks[0].getResult()
-        
-    #     elif self.match == "most_recent":
-    #         all_results = {}
-    #         for task in self.tasks:
-    #             all_results[task.user_function.__name__] =  task.getResult()
-    #     else:
-    #         all_results = []
-    #         for task in self.tasks:
-    #             all_results.append( task.getResult() )
-
-
-    #     return all_results

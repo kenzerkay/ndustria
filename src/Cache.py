@@ -84,12 +84,12 @@ class Cache:
 
         file_size = os.stat(cache_fname).st_size
         self.table[os.path.basename(cache_fname)] = (
-            str(task),
+            task.getString(),
             file_size,
         )
             
         self.writeCacheInfo()
-        log(f"Saved result of {task} to {cache_fname}")
+        log(f"Saved result of {task.getString()} to {cache_fname}")
     # end save
 
 

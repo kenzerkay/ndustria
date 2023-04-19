@@ -44,8 +44,11 @@ class Pipeline:
         return cls.instance
 
     def __init__(self):
-        """This function intentionally left blank"""
-        pass
+        self.rerun=False
+        self.parallel=False
+        self.dryrun=False
+        self.timeit=True
+        self.memcheck=False
 
     def addTask(self, 
         user_function, 
@@ -194,7 +197,7 @@ class Pipeline:
 
                     # round robin distribute Tasks to processes
                     if i % pipe.getCommSize() == pipe.getCommRank():
-                        print(f"[Rank {pipe.getCommRank()}] running:" + str(task))
+                        print(f"[Rank {pipe.getCommRank()}] running:" + task.getString())
                         task.run()
                     else:
                         # Mark this Task done on other processes
@@ -206,7 +209,7 @@ class Pipeline:
 
             waiting = [task for task in pipe.Tasks if not task.done]
 
-            print(f"[Rank {pipe.getCommRank()}] waiting on {len(waiting)} Tasks")
+            log(f"[Rank {pipe.getCommRank()}] waiting on {len(waiting)} Tasks")
 
             log(f"---\nIteration {iterations} finished. {len(waiting)} Tasks left\n---")
             if len(waiting) != 0 and num_waiting <= len(waiting):

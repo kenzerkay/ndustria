@@ -123,11 +123,35 @@ class Task:
     def __repr__(self):
         """Just calls str() cuz I'm lazy."""
         return str(self)
+    
+    def getString(self):
+        """Returns a truncated string representation of this Task for human-readable logging"""
+
+        task_string = str(self)
+
+        if (len(task_string) > 50):
+            return task_string[:50] + "..."
+        else:
+            return task_string
+
+    def __iter__(self):
+
+        if self.done:
+            return self.getResult().__iter__()
+
+        if not self.readyToRun():
+            raise TaskNotReadyError(self)
+        
+        self.run()
+
+        return self.getResult().__iter__()
+        
+
 
     def run(self):
         """Runs the Task by calling its user_function with the supplied arguments and any dependency data"""
 
-        log(f"Running {self}")
+        log(f"Running {self.getString()}")
 
         arguments = []
         for a in self.args:
@@ -166,9 +190,8 @@ class Task:
         ###################################################################
         # Save the result
         ###################################################################
-
-        self.pipeline.cache.save(self)
         self.done = True
+        self.pipeline.cache.save(self)
 
     def getFilename(self):
         """Returns the filename in the cache that this Task saves to. May not necessarily be the same as the Task hashcode.
@@ -273,3 +296,10 @@ class Task:
     def isTask(task):
 
         return task.__class__.__name__ == "Task"
+    
+
+class TaskNotReadyError(Exception):
+
+    def __init__(self, task):
+        self.task = task
+        self.message = "Task attempted to run before it was ready."
