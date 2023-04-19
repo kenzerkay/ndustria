@@ -12,6 +12,14 @@ def create_many_random_arrays(N=10, size=10):
     return arrays
 
 @AddTask()
+def create_array_likes(old_arrays):
+
+    new_arrays = np.zeros_like(old_arrays)
+    for i, arr in enumerate(old_arrays):
+        new_arrays[i] = np.random.random(len(arr))
+    return new_arrays
+
+@AddTask()
 def do_analysis(data):
 
     result = {
@@ -34,30 +42,39 @@ Viewing data for {data['length']} random numbers:
 
 
 for i in range(2, 5):
-    size = 1000
-
-    random_arrays = create_many_random_arrays(N=i, size=size)
-    # here, 'random_arrays' is a an unresolved Task with no idea how many 
-    # arrays it will eventually create once it resolves
-
-    # in order for this to be processed correctly
-    # random_arrays has to resolve as its being asked to iterate
-    #
-    # i.e. random_arrays runs as this for loop is being setup
-    # if random_arrays is not readyToRun, this should error
-    for arr in random_arrays:
-        analysis = do_analysis(arr)
-        view_data(analysis)
+    size = 500
 
 
+    # Create a setup that will fail with the TaskNotReadError
+    # This will only fail successfully if a result for create_many_random_arrays
+    # does not exist in cache. 
+    # 
+    # 
     try:
-        random_arrays = create_many_random_arrays()
-        fake_analysis = do_analysis(random_arrays)
+        random_arrays = create_many_random_arrays(i, size)
+        arrays_like = create_array_likes(random_arrays)
 
-        for i in fake_analysis:
+        for i in arrays_like:
             other_analysis = do_analysis(i)
     except TaskNotReadyError as e:
-        print("Test passed!")
+        print("Task failed successfully!")
+
+
+    
+    try:
+        # Now run the dependency that caused us to fail
+        random_arrays = create_many_random_arrays()
+        random_arrays.run()
+
+        # and try it again
+        arrays_like = create_array_likes(random_arrays)
+
+        for i in arrays_like:
+            other_analysis = do_analysis(i)
+            view_data(other_analysis)
+    except TaskNotReadyError as e:
+        print("Task failed unsuccessfully <:'C")
+
 
 
 Pipeline.run(rerun=True)
