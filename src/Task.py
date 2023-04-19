@@ -151,7 +151,7 @@ class Task:
     def run(self):
         """Runs the Task by calling its user_function with the supplied arguments and any dependency data"""
 
-        log(f"Running {self.getString()}")
+        log(f"[Rank {self.pipeline.getCommRank()}] Running {self.getString()}")
 
         arguments = []
         for a in self.args:

@@ -73,9 +73,9 @@ class Pipeline:
         self.Tasks.append(new_task)
 
         if new_task.done:
-            log(f"Task {new_task} will be skipped")
+            log(f"Task {new_task.getString()} will be skipped")
         else:
-            log(f"Added new Task: {new_task}")
+            log(f"Added new Task: {new_task.getString()}")
 
 
         return new_task
@@ -156,7 +156,7 @@ class Pipeline:
         pipe.dryrun = dryrun
 
         if parallel:
-            log(f"Initializing parallel run with {pipe.getCommSize()} processes")
+            if pipe.isRoot(): log(f"Initializing parallel run with {pipe.getCommSize()} processes")
 
         if rerun:
             pipe.clearCache()
@@ -171,7 +171,7 @@ class Pipeline:
 
         num_waiting = len(waiting)
 
-        log(f"---\n Starting a run with {num_waiting} tasks.\n---\n")
+        if pipe.isRoot(): log(f"---\n Starting a run with {num_waiting} tasks.\n---\n")
 
         MAX_ITERATIONS = 10000
         iterations = 0
@@ -211,7 +211,7 @@ class Pipeline:
 
             log(f"[Rank {pipe.getCommRank()}] waiting on {len(waiting)} Tasks")
 
-            log(f"---\nIteration {iterations} finished. {len(waiting)} Tasks left\n---")
+            if pipe.isRoot(): log(f"---\nIteration {iterations} finished. {len(waiting)} Tasks left\n---")
             if len(waiting) != 0 and num_waiting <= len(waiting):
                 error("Looks like the last run didn't complete any Tasks. Check your script for missing dependencies. Exiting")
 
@@ -236,6 +236,7 @@ class Pipeline:
 
         # end Views while loop
 
+        # TODO: Fix this so it works in parallel
         if pipe.timeit:
             # save it to cache for internal use
             timing_data_file = os.path.join(pipe.cache.path, f"{pipe.name}_timing.csv")
@@ -250,7 +251,7 @@ class Pipeline:
                 for task in pipe.Tasks:
                     memcheck_data.write(f"{task.user_function.__name__}, {task.initial_mem}, {task.final_mem}, {task.peak_mem}\n")
 
-        log("All done.")
+        if pipe.isRoot(): log("All done.")
           
 
     @staticmethod
