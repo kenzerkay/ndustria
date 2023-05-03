@@ -52,6 +52,9 @@ def log(msg):
     with open(LOG_FILE, "a+") as log:
         print(msg, file=log)
 
+    if VERBOSE == True:
+        print(msg)
+
 def setLogFile(filepath):
     global LOG_FILE 
     LOG_FILE = os.path.abspath(filepath)
