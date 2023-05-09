@@ -78,6 +78,10 @@ class Cache:
         cache_fname = os.path.join(self.path, task.getFilename())
 
         result = task.getResult()
+
+        result_is_external_file = False
+        if type(result) == str:
+            result_is_external_file = True
         
         with open(cache_fname, 'wb') as f:
             pickle.dump(task.result, f)
@@ -89,7 +93,11 @@ class Cache:
         )
             
         self.writeCacheInfo()
-        log(f"Saved result of {task.getString()} to {cache_fname}")
+        if result_is_external_file:
+            log(f"Saved result of {task.getString()} to {result}")
+        else:
+            log(f"Saved result of {task.getString()} to {cache_fname}")
+
     # end save
 
 

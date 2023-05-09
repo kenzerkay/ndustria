@@ -6,8 +6,7 @@ import functools
 from .Pipeline import Pipeline
 
 def AddTask(
-    depends_on=None,
-    match="most_recent"
+    rerun=False
 ):
     """When the decorated function is called, it creates a Task and adds it the Pipeline instead of running. 
 
@@ -80,7 +79,8 @@ def AddTask(
             return pipe.addTask(
                 user_function, 
                 args, 
-                kwargs
+                kwargs,
+                rerun=rerun
             )
 
         return inner_wrapper

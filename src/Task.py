@@ -38,7 +38,8 @@ class Task:
         user_function, 
         args, 
         kwargs, 
-        pipeline
+        pipeline,
+        rerun=False
     ):
         """Initializes a new Task. Should not be called directly. Instead use the @AddTask decorator.
 
@@ -83,7 +84,7 @@ class Task:
         self.done = False
 
         # figure out if this Task has a result in cache already and load it
-        if self.pipeline.cache.exists(self):
+        if rerun != True and self.pipeline.cache.exists(self):
             self.done = True
             self.getResult()
             

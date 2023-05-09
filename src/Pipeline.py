@@ -53,14 +53,15 @@ class Pipeline:
     def addTask(self, 
         user_function, 
         args, 
-        kwargs
+        kwargs,
+        rerun=False
     ):
         """Factory function for creating all new Tasks
         
         Arguments:
         user_function -- A user defined function that represents one stage of an analysis pipeline
         args -- a list of positional arguments to pass to user_function
-        kwargs -- a dictionary of keyword arguments to apss to user_function
+        kwargs -- a dictionary of keyword arguments to pass to user_function
         """
 
         # create the new Task and append it to the Pipeline
@@ -69,7 +70,8 @@ class Pipeline:
             user_function, 
             args, 
             kwargs, 
-            self)
+            self,
+            rerun=rerun)
         self.Tasks.append(new_task)
 
         if new_task.done:
