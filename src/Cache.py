@@ -64,7 +64,6 @@ class Cache:
         # if we have a previous result, serve that up
         try:
             with open(cache_fname, 'rb') as f:
-                log(f"Found cache result for {cache_fname}")
                 result = pickle.load(f)
         except FileNotFoundError as e:
             error(f"No cache result found for {cache_fname}")

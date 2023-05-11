@@ -14,27 +14,18 @@ def AddTask(
     at execution time. 
 
     Arguments:
-    depends_on -- A function, or list of functions whose Tasks must be run before this Task can be executed
-    match -- a string that tells ndustria how to assign dependencies. 
-             The options are:
-             most_recent -- Finds a Task that matches the given function name that was most recently added to the Pipeline
-             all -- Finds all Tasks that match the given function name
-
+        rerun -- boolean. If True, always runs this Task, regardless of what's in the cache
+                 Use this when debugging your pipeline.
+                 Default value: False
     -----------------------------------------------------------------------------------------
     IMPORTANT Part I
     -----------------------------------------------------------------------------------------
 
-    If this Task depends on a previously run Task, then the first positional argument in the function definition
-    MUST represent the return value of that Task (if there are multiple dependencies, see the documentation of Task.getDependencyData
-    for more information)
 
-    When a decorated, dependent function is called, do NOT pass in that first positional argument. Ndustria will take care of that.
-    Just pass along any extraneous arguments required to run your function.
-
-    Example:
+    Example Usage:
 
     # When defining the function
-    @AddTask(depends_on=independent_function)
+    @AddTask()
     def dependent_function(result_from_independent_function, a, b, c):
         
         d = do_something_with( result_from_independent_function )
@@ -46,10 +37,10 @@ def AddTask(
     # When setting up the pipeline
 
     # run independent_function first
-    other_function()
+    result_from_independent_function = other_function()
 
-    # then call dependent_function() WITHOUT first argument
-    dependent_function(a, b, c)
+    # then call dependent_function() first argument
+    dependent_function(result_from_independent_function, a, b, c)
 
     # The actual execution of both functions occurs here
     Pipeline.run()
@@ -88,9 +79,7 @@ def AddTask(
 
     
 def AddView(
-    looks_at=None,
-    match="most_recent",
-    root_proc_only=False
+    root_only=False
 ):
     """The decorated function is converted in a View and added to the Pipeline.
 
@@ -103,17 +92,13 @@ def AddView(
 
     Secondly, Views are always dependent on a Task. There is no such thing as an independent View.
 
-    The decorated function must have its first positional argument accept the result of its dependent Tasks, same as 
-    any dependent Task. When calling the decorated function as part of regular Pipeline setup, leave out the first
-    positional argument, again, the same as any dependent Task.
-
-    Views can take positional or keyword arguments in the same way as Tasks, and they use the same matching strategies 
-    to determine what their dependencies are. 
+    Views can take positional or keyword arguments in the same way as Tasks and they
+    will auto-resolve any Tasks passed in as an argument to determine what they depend on.
 
     Views can also be run soley on the root process (rank=0) if running in parallel.
 
     Arguments:
-    root_proc_only -- Runs this View only on the root process (rank = 0)
+    root_only -- Runs this View only on the root process (rank = 0)
     """
     pipe = Pipeline()
 
@@ -124,8 +109,8 @@ def AddView(
             pipe.addView(
                 user_function, 
                 args, 
-                kwargs, 
-                looks_at
+                kwargs,
+                root_only=root_only
             )
 
         return inner_wrapper

@@ -7,14 +7,13 @@ class View:
             user_function, 
             args, kwargs, 
             pipeline, 
-            root_proc_only
+            root_only
         ):
         self.user_function = user_function
         self.args = args
         self.kwargs = kwargs
         self.pipeline = pipeline
-        self.tasks = []
-        self.root_proc_only = root_proc_only
+        self.root_only = root_only
         self.shown = False
 
         # name of the file where this Task's data is stored
@@ -23,9 +22,9 @@ class View:
         # keep a hash for every Task so we know whether to invalidate the cache
         self.hashcode = ""
 
-        for a in self.args:
-            if Task.isTask(a):
-                self.tasks.append(a)
+        self.tasks = [
+            a for a in self.args if Task.isTask(a)
+        ]
 
 
     def __str__(self):
@@ -51,32 +50,28 @@ class View:
         if not debug_string.endswith(")"):
             debug_string += ")"
 
-        debug_string += f" which views {str(self.tasks)}"
-
         return debug_string
 
     def __repr__(self):
         return str(self)
 
+    def getString(self):
+        """Returns a truncated string representation of this Task for human-readable logging"""
+
+        task_string = str(self)
+
+        if (len(task_string) > 80):
+            return task_string[:80] + "..."
+        else:
+            return task_string
+
     def run(self):
 
-        if self.root_proc_only and not self.pipeline.isRoot():
+        if self.root_only and not self.pipeline.isRoot():
+            self.shown = True
             return
         
-        arguments = []
-        for a in self.args:
-
-            arg_is_task = Task.isTask(a)
-
-            arg_is_list_of_tasks = type(a) == list and Task.isTask(a[0])
-
-            if arg_is_task:
-                arguments.append(a.getResult())
-            elif arg_is_list_of_tasks: 
-                new_list = [t.getResult() for t in a]
-                arguments.append(new_list)
-            else:
-                arguments.append(a)
+        arguments = Task.parseArgs(self.args)
 
         self.user_function(*arguments, **self.kwargs)
             

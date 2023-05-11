@@ -36,10 +36,13 @@ class Pipeline:
             # name the pipeline after the file that ran it w/o .py
             cls.instance.name = sys.argv[0].replace(".py","")
             cls.instance.cache = Cache()
-            log(f"---\nPipeline {cls.instance.name} created with cache located at {cls.instance.cache.path}\n---\n")
 
             # TODO: Put some more thought into whether we should be using COMM_WORLD
             cls.instance.comm = MPI.COMM_WORLD
+
+            if cls.instance.isRoot():
+                log(f"---\nPipeline {cls.instance.name} created with cache located at {cls.instance.cache.path}\n---\n")
+
 
         return cls.instance
 
@@ -74,10 +77,13 @@ class Pipeline:
             rerun=rerun)
         self.Tasks.append(new_task)
 
-        if new_task.done:
-            log(f"Task {new_task.getString()} will be skipped")
-        else:
-            log(f"Added new Task: {new_task.getString()}")
+        if self.isRoot(): 
+            if new_task.done:
+                log(f"[Cache hit!] Task {new_task.getString()} will be skipped")
+            else:
+                log(f"[Added Task] {new_task.getString()}")
+            # end if
+        # end if
 
 
         return new_task
@@ -86,7 +92,7 @@ class Pipeline:
         user_function, 
         args, 
         kwargs,
-        root_proc_only=False
+        root_only=False
     ):
         """Factory function for creating all new Views
         
@@ -95,7 +101,7 @@ class Pipeline:
                          of the data
         args -- a list of positional arguments to pass to user_function
         kwargs -- a dictionary of keyword arguments to apss to user_function
-        root_proc_only -- If True, prevents this View from being executed on any process that does not have rank = 0
+        root_only -- If True, prevents this View from being executed on any process that does not have rank = 0
         """ 
 
         # create the new Task and append it to the Pipeline
@@ -104,10 +110,10 @@ class Pipeline:
             args, 
             kwargs, 
             self,
-            root_proc_only)
+            root_only)
         self.Views.append(new_view)
 
-        log(f"Added new View: {new_view}")
+        if self.isRoot(): log(f"[Added View] {new_view.getString()}")
 
 
     """
@@ -199,7 +205,7 @@ class Pipeline:
 
                     # round robin distribute Tasks to processes
                     if i % pipe.getCommSize() == pipe.getCommRank():
-                        print(f"[Rank {pipe.getCommRank()}] running:" + task.getString())
+                        log(f"[Rank {pipe.getCommRank()}] running: " + task.getString())
                         task.run()
                     else:
                         # Mark this Task done on other processes
@@ -221,10 +227,12 @@ class Pipeline:
             
         # end main while loop
 
-        log(f"Finished all tasks after {iterations} iterations")
+        if pipe.isRoot(): log(f"Finished all tasks after {iterations} iterations")
 
         run_this_iteration = []
         waiting = [view for view in pipe.Views]
+
+        if pipe.isRoot(): log(f"---\n {len(waiting)} views remaining.\n---\n")
 
         while len(waiting) > 0 and iterations < MAX_ITERATIONS:
             iterations+=1
@@ -232,9 +240,27 @@ class Pipeline:
             run_this_iteration = [view for view in waiting if view.readyToRun()]
 
             for view in run_this_iteration:
-                view.run()
+
+                if view.root_only:
+                    if pipe.isRoot(): 
+                        print(f"[Rank {pipe.getCommRank()}] running: " + view.getString())
+                        view.run()
+                    else:
+                        view.shown = True
+                elif i % pipe.getCommSize() == pipe.getCommRank():
+                    print(f"[Rank {pipe.getCommRank()}] running: " + view.getString())
+                    view.run()
+                else:
+                    view.shown = True
+                # end if
+            # end for view 
+
+            pipe.comm.Barrier()
 
             waiting = [view for view in pipe.Views if not view.shown]
+        # end while
+
+        if pipe.isRoot(): log(f"---\n Completed all views .\n---\n")
 
         # end Views while loop
 

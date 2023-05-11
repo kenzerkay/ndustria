@@ -116,9 +116,6 @@ class Task:
         if not debug_string.endswith(")"):
             debug_string += ")"
 
-        if not self.indepedent:
-            debug_string += f" which depends on {str(self.dependencies)}"
-
         return debug_string
 
     def __repr__(self):
@@ -130,8 +127,8 @@ class Task:
 
         task_string = str(self)
 
-        if (len(task_string) > 50):
-            return task_string[:50] + "..."
+        if (len(task_string) > 80):
+            return task_string[:80] + "..."
         else:
             return task_string
 
@@ -146,28 +143,23 @@ class Task:
         self.run()
 
         return self.getResult().__iter__()
+
+    def rerun(self, value=True):
+        """Allows individual Task instances to be rerun. Useful for debugging."""
+        if value:
+            self.result = None
+            self.done = False
+
+        elif not value and self.pipeline.cache.exists(self):
+            self.done = True
+            self.getResult()
         
 
 
     def run(self):
         """Runs the Task by calling its user_function with the supplied arguments and any dependency data"""
 
-        log(f"[Rank {self.pipeline.getCommRank()}] Running {self.getString()}")
-
-        arguments = []
-        for a in self.args:
-
-            arg_is_task = Task.isTask(a)
-
-            arg_is_list_of_tasks = type(a) == list and Task.isTask(a[0])
-
-            if arg_is_task:
-                arguments.append(a.getResult())
-            elif arg_is_list_of_tasks: 
-                new_list = [t.getResult() for t in a]
-                arguments.append(new_list)
-            else:
-                arguments.append(a)
+        arguments = Task.parseArgs(self.args)
 
         if self.pipeline.timeit: 
             start = time.time()
@@ -297,6 +289,34 @@ class Task:
     def isTask(task):
 
         return task.__class__.__name__ == "Task"
+    
+    # making this a static method so Views can use it too
+    # I'm sure there's some OOP magic I can use to make this a bit smoother
+    # but fuck it, I get paid $30k a year so this is gonna be whatever the fuck
+    # works
+    @staticmethod
+    def parseArgs(unparsed_args):
+
+        parsed_arguments = []
+        for arg in unparsed_args:
+
+            arg_is_task = Task.isTask(arg)
+
+            arg_is_list_of_tasks = (
+                type(arg) == list 
+                and len(arg) > 0 
+                and all([Task.isTask(x) for x in arg])
+            )
+
+            if arg_is_task:
+                parsed_arguments.append(arg.getResult())
+            elif arg_is_list_of_tasks: 
+                new_list = [t.getResult() for t in arg]
+                parsed_arguments.append(new_list)
+            else:
+                parsed_arguments.append(arg)
+        
+        return parsed_arguments
     
 
 class TaskNotReadyError(Exception):
