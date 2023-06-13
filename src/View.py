@@ -71,9 +71,9 @@ class View:
             self.shown = True
             return
         
-        arguments = Task.parseArgs(self.args)
+        arguments, kwarguments = Task.parseArgs(self.args, self.kwargs)
 
-        self.user_function(*arguments, **self.kwargs)
+        self.user_function(*arguments, **kwarguments)
             
         self.shown = True
 

@@ -66,7 +66,10 @@ class Cache:
             with open(cache_fname, 'rb') as f:
                 result = pickle.load(f)
         except FileNotFoundError as e:
-            error(f"No cache result found for {cache_fname}")
+            error(f"""No cache result found for {cache_fname}.
+Task Information:
+{task}
+""")
         else:
             task.result = result
 

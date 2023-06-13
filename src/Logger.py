@@ -33,12 +33,17 @@ def warn(args):
 # for when you need to die but also try to explain to the user 
 # why you died
 # outputs to both log and console
-def error(args):
+def error(args, fatal=True, task=None):
 
     msg = "[Error] " + str(args)
     log(msg)
     print(msg)
-    exit()
+
+    if task is not None:
+        print(task)
+
+    if fatal:
+        exit()
 
 
 # Convenience error function

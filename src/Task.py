@@ -68,9 +68,24 @@ class Task:
         # tracked by the dependencies list
         self.dependencies = []
         for a in self.args:
-            if Task.isTask(a):
+            arg_is_task = Task.isTask(a)
+
+            # note that this will break if any of the elements 
+            # of the list are not themselves Tasks
+            # could become an issue
+            arg_is_list_of_tasks = (
+                (type(a) == list or type(a) == tuple)
+                and len(a) > 0 
+                and all([Task.isTask(x) for x in a])
+            )
+
+            if arg_is_task:
                 self.indepedent = False
                 self.dependencies.append(a)
+            elif arg_is_list_of_tasks:
+                self.indepedent = False
+                for t in a:
+                    self.dependencies.append(t)
 
         # name of the file or files where this Task's data is stored
         self.filename = None
@@ -149,6 +164,7 @@ class Task:
         if value:
             self.result = None
             self.done = False
+            log(f"[Rerunning Task] {self.getString()}")
 
         elif not value and self.pipeline.cache.exists(self):
             self.done = True
@@ -159,7 +175,8 @@ class Task:
     def run(self):
         """Runs the Task by calling its user_function with the supplied arguments and any dependency data"""
 
-        arguments = Task.parseArgs(self.args)
+        arguments, kwarguments = Task.parseArgs(self.args, self.kwargs)
+
 
         if self.pipeline.timeit: 
             start = time.time()
@@ -170,7 +187,7 @@ class Task:
         ###################################################################
         # Run the actual function
         ###################################################################
-        self.result = self.user_function(*arguments, **self.kwargs)   
+        self.result = self.user_function(*arguments, **kwarguments)   
         
         if self.pipeline.timeit: 
             self.wallTime = time.time() - start
@@ -295,7 +312,7 @@ class Task:
     # but fuck it, I get paid $30k a year so this is gonna be whatever the fuck
     # works
     @staticmethod
-    def parseArgs(unparsed_args):
+    def parseArgs(unparsed_args, unparsed_kwargs):
 
         parsed_arguments = []
         for arg in unparsed_args:
@@ -315,8 +332,28 @@ class Task:
                 parsed_arguments.append(new_list)
             else:
                 parsed_arguments.append(arg)
+
+        parsed_kwargs = {}
+        for key, kwarg in unparsed_kwargs.items():
+
+            arg_is_task = Task.isTask(kwarg)
+
+            arg_is_list_of_tasks = (
+                type(kwarg) == list 
+                and len(kwarg) > 0 
+                and all([Task.isTask(x) for x in kwarg])
+            )
+
+            if arg_is_task:
+                parsed_kwargs[key] = kwarg.getResult()
+            elif arg_is_list_of_tasks: 
+                new_list = [t.getResult() for t in kwarg]
+                parsed_kwargs[key] = new_list
+            else:
+                parsed_kwargs[key] = kwarg
+
         
-        return parsed_arguments
+        return parsed_arguments, parsed_kwargs
     
 
 class TaskNotReadyError(Exception):

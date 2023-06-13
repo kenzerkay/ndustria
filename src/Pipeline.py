@@ -9,7 +9,7 @@ Once all Views are complete, the Pipeline is done and the program will exit.
 
 """
 
-
+import sys
 from .Task import Task
 from .Cache import Cache
 from .View import View
@@ -188,27 +188,27 @@ class Pipeline:
 
             run_this_iteration = [task for task in waiting if task.readyToRun()]
 
-
-            #TODO: May want to put a try catch around this to 
-            # help it fail gracefully
             for i, task in enumerate(run_this_iteration):
 
                 if parallel:
-                    # TODO: this works so long as the dependent Tasks end up 
-                    # running on the same process as their dependencies
-                    # otherwise this will fail
-                    # lots to consider in fixing this
-                    # it might be ok to distribute Task results to all processes
-                    # so long as results*comm_size is small compared to peak memory and that might be easier
-                    # than trying to associate particular Task dependency chains
-                    # with a particular process
-
                     # round robin distribute Tasks to processes
                     if i % pipe.getCommSize() == pipe.getCommRank():
                         log(f"[Rank {pipe.getCommRank()}] running: " + task.getString())
-                        task.run()
+
+                        try:
+                            task.run()
+                        except Exception as e:
+                            ex_type, ex_value, ex_traceback = sys.exc_info()
+                            error(ex_type.__name__ +' '+ str(ex_value), 
+                                  fatal=False,
+                                  task=task
+                            )
+                            # TODO: Broadcast that this Task has failed to other processes
+
                     else:
                         # Mark this Task done on other processes
+                        # TODO: Gather Task successes and failures at the
+                        # current Barrier step
                         task.done = True
                 else:
                     task.run()
@@ -239,16 +239,16 @@ class Pipeline:
 
             run_this_iteration = [view for view in waiting if view.readyToRun()]
 
-            for view in run_this_iteration:
+            for i, view in enumerate(run_this_iteration):
 
                 if view.root_only:
                     if pipe.isRoot(): 
-                        print(f"[Rank {pipe.getCommRank()}] running: " + view.getString())
+                        log(f"[Rank {pipe.getCommRank()}] running: " + view.getString())
                         view.run()
                     else:
                         view.shown = True
                 elif i % pipe.getCommSize() == pipe.getCommRank():
-                    print(f"[Rank {pipe.getCommRank()}] running: " + view.getString())
+                    log(f"[Rank {pipe.getCommRank()}] running: " + view.getString())
                     view.run()
                 else:
                     view.shown = True
