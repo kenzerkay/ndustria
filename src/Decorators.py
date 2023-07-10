@@ -3,9 +3,9 @@
 """
 
 import functools
-from .Pipeline import Pipeline
 
 def AddTask(
+    self,
     rerun=False
 ):
     """When the decorated function is called, it creates a Task and adds it the Pipeline instead of running. 
@@ -35,11 +35,12 @@ def AddTask(
         return result
 
     # When setting up the pipeline
+    pipe = Pipeline()
 
     # run independent_function first
-    result_from_independent_function = other_function()
+    result_from_independent_function = independent_function()
 
-    # then call dependent_function() first argument
+    # then call dependent_function()
     dependent_function(result_from_independent_function, a, b, c)
 
     # The actual execution of both functions occurs here
@@ -61,13 +62,11 @@ def AddTask(
     
     """
 
-    pipe = Pipeline()
-
     def outer_wrapper(user_function):
         @functools.wraps(user_function)
         def inner_wrapper(*args, **kwargs):
 
-            return pipe.addTask(
+            return self._addTask(
                 user_function, 
                 args, 
                 kwargs,
@@ -79,6 +78,7 @@ def AddTask(
 
     
 def AddView(
+    self,
     root_only=False
 ):
     """The decorated function is converted in a View and added to the Pipeline.
@@ -100,13 +100,12 @@ def AddView(
     Arguments:
     root_only -- Runs this View only on the root process (rank = 0)
     """
-    pipe = Pipeline()
 
     def outer_wrapper(user_function):
         @functools.wraps(user_function)
         def inner_wrapper(*args, **kwargs):
 
-            pipe.addView(
+            self.addView(
                 user_function, 
                 args, 
                 kwargs,

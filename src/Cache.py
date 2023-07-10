@@ -168,6 +168,8 @@ Task Information:
 
     # end loadTable
 
-        
+    def getFullPathToTask(self, task):
+
+        return os.path.join(self.path, task.getFilename())
 
     
