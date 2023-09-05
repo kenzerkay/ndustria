@@ -132,3 +132,6 @@ dmypy.json
 #compressed files
 *.zip
 *.tar.gz
+
+# anything vscode related
+.vscode/*

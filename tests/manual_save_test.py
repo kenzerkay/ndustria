@@ -1,8 +1,9 @@
-from ndustria import AddTask, AddView, Pipeline
+from ndustria import Pipeline
 import numpy as np
 
+pipe = Pipeline()
 
-@AddTask()
+@pipe.AddFunction()
 def create_a_file_with_word(word, index):
 
     filename = f"test_file_{index}.txt"
@@ -10,7 +11,7 @@ def create_a_file_with_word(word, index):
         f.write(word)
     return filename
 
-@AddView()
+@pipe.AddFunction()
 def test_file_was_created(filename, original_word):
 
     with open(filename, "r") as f:
@@ -23,6 +24,8 @@ def test_file_was_created(filename, original_word):
         print(f"This matches the original word, '{original_word}'")
     else: 
         print(f"This does not match the original word, '{original_word}'")
+
+    return "no_result"
 
 
 words = [
@@ -38,4 +41,4 @@ for i,w in enumerate(words):
     test_file_was_created(file, w)
 
 
-Pipeline.run(rerun=True)
+pipe.run(run_all=True)

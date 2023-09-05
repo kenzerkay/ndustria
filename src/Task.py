@@ -32,6 +32,13 @@ and the Task will be rerun.
 import inspect, hashlib, time, tracemalloc
 from .Logger import log, warn
 
+# Task status codes
+WAITING = 0 # waiting on dependencies to finish first
+READY   = 1 # all dependencies finished, ready to execute
+RUNNING = 2 # currently running
+DONE    = 3 # finished running, result in memory
+
+
 class Task:
     """A Task is a the smallest unit of work performed by an analysis Pipeline"""
     def __init__(self, id,
@@ -55,7 +62,7 @@ class Task:
         self.kwargs = kwargs
         self.pipeline = pipeline
 
-        # Run statstics i.e. wall clock time and memory
+        # Run statistics i.e. wall clock time and memory
         self.wallTime = 0
         self.initial_mem = 0
         self.peak_mem = 0
@@ -66,23 +73,14 @@ class Task:
 
         # any arguments that are Task objects are dependencies that need to be
         # tracked by the dependencies list
+        # TODO: May want to check for kwargs as well
         self.dependencies = []
         for a in self.args:
-            arg_is_task = Task.isTask(a)
 
-            # note that this will break if any of the elements 
-            # of the list are not themselves Tasks
-            # could become an issue
-            arg_is_list_of_tasks = (
-                (type(a) == list or type(a) == tuple)
-                and len(a) > 0 
-                and all([Task.isTask(x) for x in a])
-            )
-
-            if arg_is_task:
+            if Task.isTask(a):
                 self.indepedent = False
                 self.dependencies.append(a)
-            elif arg_is_list_of_tasks:
+            elif Task.isListOfTasks(a): 
                 self.indepedent = False
                 for t in a:
                     self.dependencies.append(t)
@@ -96,11 +94,11 @@ class Task:
 
         # reference to the data product this Task makes
         self.result = None
-        self.done = False
+        self.status = WAITING
 
         # figure out if this Task has a result in cache already and load it
         if rerun != True and self.pipeline.cache.exists(self):
-            self.done = True
+            self.status = DONE
             self.getResult()
             
 
@@ -108,7 +106,20 @@ class Task:
         
 
     def __str__(self):
-        """Returns the Task name, arguments, and dependencies as a string."""
+        """Returns the Task name, arguments, and dependencies as a string.
+        
+            Also encodes the Task's current status like so:
+            W = Waiting on dependencies
+            P = Dependencies complete, ready to be run
+            R = Running
+            D = Done
+        """
+        status_codes = {
+            WAITING: "W",
+            READY: "P",
+            RUNNING : "R",
+            DONE : "D"
+        }
         debug_string = f"{self.user_function.__name__}("
         for i, a in enumerate(self.args):
             debug_string += str(a)
@@ -149,7 +160,7 @@ class Task:
 
     def __iter__(self):
 
-        if self.done:
+        if self.done():
             return self.getResult().__iter__()
 
         if not self.readyToRun():
@@ -163,18 +174,18 @@ class Task:
         """Allows individual Task instances to be rerun. Useful for debugging."""
         if value:
             self.result = None
-            self.done = False
+            self.status == WAITING
             log(f"[Rerunning Task] {self.getString()}")
 
         elif not value and self.pipeline.cache.exists(self):
-            self.done = True
+            self.status == DONE
             self.getResult()
         
 
 
     def run(self):
         """Runs the Task by calling its user_function with the supplied arguments and any dependency data"""
-
+        self.status = RUNNING
         arguments, kwarguments = Task.parseArgs(self.args, self.kwargs)
 
 
@@ -188,6 +199,17 @@ class Task:
         # Run the actual function
         ###################################################################
         self.result = self.user_function(*arguments, **kwarguments)   
+
+        ###################################################################
+        # If the result is a string, assume its a filename
+        ###################################################################
+        if type(self.result) == str:
+            self.filename = self.result
+
+        elif self.result is None:
+            warn("A Task was run but did not return a result.")
+            self.result = "no_result"
+            self.filename = self.result
         
         if self.pipeline.timeit: 
             self.wallTime = time.time() - start
@@ -200,19 +222,23 @@ class Task:
         ###################################################################
         # Save the result
         ###################################################################
-        self.done = True
+        self.status = DONE
         self.pipeline.cache.save(self)
+
 
     def getFilename(self):
         """Returns the filename in the cache that this Task saves to. May not necessarily be the same as the Task hashcode.
         """
-        return self.getHashCode()
+        if self.filename == None:
+            return self.getHashCode()
+        
+        return self.filename
 
     def getResult(self):
         """ Gets the result of this task if one exists. Will return None if no result exists.
         """
 
-        if not self.done:
+        if not self.done():
             warn("Task had getResult called before it was run. Result will be None")
             return None
 
@@ -223,6 +249,19 @@ class Task:
 
         return self.result
 
+
+    def done(self):
+        return self.status == DONE
+    
+    def running(self):
+        return self.status == RUNNING
+    
+    def ready(self):
+        return self.status == READY
+    
+    def waiting(self):
+        return self.status == WAITING
+
     def readyToRun(self):
         """Determines whether or not this Task is ready to be run by running through its dependencies and return true if they are all marked "done"
 
@@ -230,11 +269,14 @@ class Task:
         """
 
         if self.indepedent:
+            self.status = READY
             return True
         
         for task in self.dependencies:
-            if not task.done:
+            if not task.done():
+                self.status = WAITING
                 return False
+        self.status = READY
         return True
 
     def getHashCode(self):
@@ -303,31 +345,28 @@ class Task:
     
 
     @staticmethod
-    def isTask(task):
+    def isTask(arg):
 
-        return task.__class__.__name__ == "Task"
+        return arg.__class__.__name__ == "Task"
     
-    # making this a static method so Views can use it too
-    # I'm sure there's some OOP magic I can use to make this a bit smoother
-    # but fuck it, I get paid $30k a year so this is gonna be whatever the fuck
-    # works
+
     @staticmethod
+    def isListOfTasks(arg):
+
+        return (
+            type(arg) == list 
+            and len(arg) > 0 
+            and all([Task.isTask(x) for x in arg])
+        )
+        
     def parseArgs(unparsed_args, unparsed_kwargs):
 
         parsed_arguments = []
         for arg in unparsed_args:
 
-            arg_is_task = Task.isTask(arg)
-
-            arg_is_list_of_tasks = (
-                type(arg) == list 
-                and len(arg) > 0 
-                and all([Task.isTask(x) for x in arg])
-            )
-
-            if arg_is_task:
+            if Task.isTask(arg):
                 parsed_arguments.append(arg.getResult())
-            elif arg_is_list_of_tasks: 
+            elif Task.isListOfTasks(arg): 
                 new_list = [t.getResult() for t in arg]
                 parsed_arguments.append(new_list)
             else:
@@ -336,17 +375,9 @@ class Task:
         parsed_kwargs = {}
         for key, kwarg in unparsed_kwargs.items():
 
-            arg_is_task = Task.isTask(kwarg)
-
-            arg_is_list_of_tasks = (
-                type(kwarg) == list 
-                and len(kwarg) > 0 
-                and all([Task.isTask(x) for x in kwarg])
-            )
-
-            if arg_is_task:
+            if Task.isTask(kwarg):
                 parsed_kwargs[key] = kwarg.getResult()
-            elif arg_is_list_of_tasks: 
+            elif Task.isListOfTasks(kwarg): 
                 new_list = [t.getResult() for t in kwarg]
                 parsed_kwargs[key] = new_list
             else:

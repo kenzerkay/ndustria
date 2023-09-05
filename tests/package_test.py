@@ -8,9 +8,9 @@ import numpy as np
 
 from ndustria import AddTask, Pipeline
 
-pipe = Pipeline(name="package_test", rerun=True)
+pipe = Pipeline(name="package_test")
 
-@pipe.AddTask()
+@pipe.AddFunction()
 def create_random_array(seed=100):
 
     np.random.seed(100)

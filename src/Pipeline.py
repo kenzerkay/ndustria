@@ -10,13 +10,16 @@ Once all Views are complete, the Pipeline is done and the program will exit.
 """
 
 import sys
-from .Task import Task
+from .Task import Task, WAITING, DONE
 from .Cache import Cache
 from .View import View
 from .Logger import log, error
 import os, sys, tracemalloc
 
 from mpi4py import MPI
+
+import functools
+
 
 
 
@@ -26,14 +29,8 @@ class Pipeline:
     Tasks = [] 
     """List of all Task objects in this Pipeline"""
     
-    Views = []
-    """List of all View objects in this Pipeline"""
-
-    from .Decorators import AddTask
-
     def __init__(self, 
                  name="",
-                 rerun=False,
                  parallel=False,
                  dryrun=False,
                  timeit=True,
@@ -48,7 +45,6 @@ class Pipeline:
         memcheck -- If True, collects initial, peak, and final memory usage of each Task. These data will be output to a csv file in the cache. Can have high overhead if you allocate a lot of small objects
         """
 
-        self.rerun=rerun
         self.parallel=parallel
         self.dryrun=dryrun
         self.timeit=timeit
@@ -69,6 +65,23 @@ class Pipeline:
 
         #if self.isRoot():
             #log(f"---\nPipeline {self.name} created with cache located at {self.cache.path}\n---\n")
+
+
+    def AddFunction(self, rerun=False):
+        def outer_wrapper(user_function):
+            @functools.wraps(user_function)
+            def inner_wrapper(*args, **kwargs):
+
+                return self._addTask(
+                    user_function, 
+                    args, 
+                    kwargs,
+                    rerun=rerun
+                )
+
+            return inner_wrapper        
+        return outer_wrapper
+
 
     def _addTask(self, 
         user_function, 
@@ -95,8 +108,8 @@ class Pipeline:
         self.Tasks.append(new_task)
 
         if self.isRoot(): 
-            if new_task.done:
-                log(f"[Cache hit!] Task {new_task.getString()} will be skipped")
+            if new_task.done():
+                log(f"[Cache hit!] {new_task.getString()} can be skipped")
             else:
                 log(f"[Added Task] {new_task.getString()}")
             # end if
@@ -105,32 +118,32 @@ class Pipeline:
 
         return new_task
 
-    def addView(self, 
-        user_function, 
-        args, 
-        kwargs,
-        root_only=False
-    ):
-        """Factory function for creating all new Views
+    # def addView(self, 
+    #     user_function, 
+    #     args, 
+    #     kwargs,
+    #     root_only=False
+    # ):
+    #     """Factory function for creating all new Views
         
-        Arguments:
-        user_function -- A user defined function that takes data created by a Task and produces a plot or other representation 
-                         of the data
-        args -- a list of positional arguments to pass to user_function
-        kwargs -- a dictionary of keyword arguments to apss to user_function
-        root_only -- If True, prevents this View from being executed on any process that does not have rank = 0
-        """ 
+    #     Arguments:
+    #     user_function -- A user defined function that takes data created by a Task and produces a plot or other representation 
+    #                      of the data
+    #     args -- a list of positional arguments to pass to user_function
+    #     kwargs -- a dictionary of keyword arguments to apss to user_function
+    #     root_only -- If True, prevents this View from being executed on any process that does not have rank = 0
+    #     """ 
 
-        # create the new Task and append it to the Pipeline
-        new_view = View(
-            user_function, 
-            args, 
-            kwargs, 
-            self,
-            root_only)
-        self.Views.append(new_view)
+    #     # create the new Task and append it to the Pipeline
+    #     new_view = View(
+    #         user_function, 
+    #         args, 
+    #         kwargs, 
+    #         self,
+    #         root_only)
+    #     self.Views.append(new_view)
 
-        if self.isRoot(): log(f"[Added View] {new_view.getString()}")
+    #     if self.isRoot(): log(f"[Added View] {new_view.getString()}")
 
 
     """
@@ -151,7 +164,7 @@ class Pipeline:
     """
     The main Task running function
     """
-    def run(self):
+    def run(self, run_all=False):
         """
         Runs a pipeline composed of ndustria Tasks and Views
 
@@ -164,7 +177,7 @@ class Pipeline:
         if self.parallel:
             if self.isRoot(): log(f"Initializing parallel run with {self.getCommSize()} processes")
 
-        if self.rerun:
+        if run_all:
             self.clearCache()
 
         if self.memcheck:
@@ -173,7 +186,7 @@ class Pipeline:
         self.comm.Barrier()
 
         run_this_iteration = []
-        waiting = [task for task in self.Tasks if not task.done]
+        waiting = [task for task in self.Tasks if task.waiting()]
 
         num_waiting = len(waiting)
 
@@ -207,13 +220,13 @@ class Pipeline:
                         # Mark this Task done on other processes
                         # TODO: Gather Task successes and failures at the
                         # current Barrier step
-                        task.done = True
+                        task.status == DONE
                 else:
                     task.run()
 
             self.comm.Barrier()
 
-            waiting = [task for task in self.Tasks if not task.done]
+            waiting = [task for task in self.Tasks if task.waiting()]
 
             log(f"[Rank {self.getCommRank()}] waiting on {len(waiting)} Tasks")
 
@@ -228,37 +241,37 @@ class Pipeline:
         if self.isRoot(): log(f"Finished all tasks after {iterations} iterations")
 
         run_this_iteration = []
-        waiting = [view for view in self.Views]
+        # waiting = [view for view in self.Views]
 
-        if self.isRoot(): log(f"---\n {len(waiting)} views remaining.\n---\n")
+        # if self.isRoot(): log(f"---\n {len(waiting)} views remaining.\n---\n")
 
-        while len(waiting) > 0 and iterations < MAX_ITERATIONS:
-            iterations+=1
+        # while len(waiting) > 0 and iterations < MAX_ITERATIONS:
+        #     iterations+=1
 
-            run_this_iteration = [view for view in waiting if view.readyToRun()]
+        #     run_this_iteration = [view for view in waiting if view.readyToRun()]
 
-            for i, view in enumerate(run_this_iteration):
+        #     for i, view in enumerate(run_this_iteration):
 
-                if view.root_only:
-                    if self.isRoot(): 
-                        log(f"[Rank {self.getCommRank()}] running: " + view.getString())
-                        view.run()
-                    else:
-                        view.shown = True
-                elif i % self.getCommSize() == self.getCommRank():
-                    log(f"[Rank {self.getCommRank()}] running: " + view.getString())
-                    view.run()
-                else:
-                    view.shown = True
-                # end if
-            # end for view 
+        #         if view.root_only:
+        #             if self.isRoot(): 
+        #                 log(f"[Rank {self.getCommRank()}] running: " + view.getString())
+        #                 view.run()
+        #             else:
+        #                 view.shown = True
+        #         elif i % self.getCommSize() == self.getCommRank():
+        #             log(f"[Rank {self.getCommRank()}] running: " + view.getString())
+        #             view.run()
+        #         else:
+        #             view.shown = True
+        #         # end if
+        #     # end for view 
 
-            self.comm.Barrier()
+        #     self.comm.Barrier()
 
-            waiting = [view for view in self.Views if not view.shown]
-        # end while
+        #     waiting = [view for view in self.Views if not view.shown]
+        # # end while
 
-        if self.isRoot(): log(f"---\n Completed all views .\n---\n")
+        # if self.isRoot(): log(f"---\n Completed all views .\n---\n")
 
         # end Views while loop
 
@@ -345,7 +358,7 @@ class Pipeline:
 
         # reset the state of all tasks 
         for task in self.Tasks:
-            task.done = False
+            task.status = WAITING
             task.result = None
 
         

@@ -77,7 +77,13 @@ Task Information:
     # end load
 
     def save(self, task):
-        cache_fname = os.path.join(self.path, task.getFilename())
+
+        fname = task.getFilename()
+
+        if fname == "no_result":
+            return
+
+        cache_fname = os.path.join(self.path, fname)
 
         result = task.getResult()
 
