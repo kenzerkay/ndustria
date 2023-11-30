@@ -1,12 +1,14 @@
-from ndustria import AddTask, AddView, Pipeline
+from ndustria import Pipeline
 import numpy as np
 
-@AddTask()
+pipe = Pipeline()
+
+@pipe.AddFunction()
 def create_random_array(N=10):
     arr = np.random.rand(N)
     return arr
 
-@AddTask(depends_on=create_random_array)
+@pipe.AddFunction()
 def do_sum(data):
 
     result = {
@@ -15,7 +17,7 @@ def do_sum(data):
     }
     return result
 
-@AddTask(depends_on=create_random_array)
+@pipe.AddFunction()
 def do_mean(data):
 
     result = {
@@ -24,7 +26,7 @@ def do_mean(data):
     }
     return result
 
-@AddTask(depends_on=create_random_array)
+@pipe.AddFunction()
 def do_std(data):
 
     result = {
@@ -33,12 +35,8 @@ def do_std(data):
     }
     return result
 
-@AddView(looks_at=[do_sum, do_mean, do_std])
-def view_data(dataDict):
-
-    sum_data = dataDict["do_sum"]
-    mean_data = dataDict["do_mean"]
-    std_data = dataDict["do_std"]
+@pipe.AddFunction()
+def view_data(sum_data, mean_data, std_data):
 
     print(f"""
 Viewing data for {sum_data['length']} random numbers: 
@@ -46,16 +44,18 @@ Viewing data for {sum_data['length']} random numbers:
         Mean    : {mean_data['mean']}
         Std dev : {std_data['std']}
 """)
+          
+    return "no_result"
 
 
 
 for i in range(5, 8):
     N = 10**i
-    create_random_array(N=N)
-    do_sum()
-    do_mean()
-    do_std()
-    view_data()
+    random_array = create_random_array(N=N)
+    a = do_sum(random_array)
+    b = do_mean(random_array)
+    c = do_std(random_array)
+    view_data(a,b,c)
 
 
-Pipeline.run(rerun=True)
+pipe.run(run_all=True)

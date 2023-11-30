@@ -47,8 +47,8 @@ for i in range(5, 8):
 
 
 # This will actually run the functions
-#pipe.run(run_all=True)
+pipe.run(run_all=True)
 
 # This one should skip the array creation and analysis
 # and just print the results of the last run
-pipe.run()
+#pipe.run()
