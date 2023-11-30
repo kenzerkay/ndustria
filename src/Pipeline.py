@@ -118,33 +118,6 @@ class Pipeline:
 
         return new_task
 
-    # def addView(self, 
-    #     user_function, 
-    #     args, 
-    #     kwargs,
-    #     root_only=False
-    # ):
-    #     """Factory function for creating all new Views
-        
-    #     Arguments:
-    #     user_function -- A user defined function that takes data created by a Task and produces a plot or other representation 
-    #                      of the data
-    #     args -- a list of positional arguments to pass to user_function
-    #     kwargs -- a dictionary of keyword arguments to apss to user_function
-    #     root_only -- If True, prevents this View from being executed on any process that does not have rank = 0
-    #     """ 
-
-    #     # create the new Task and append it to the Pipeline
-    #     new_view = View(
-    #         user_function, 
-    #         args, 
-    #         kwargs, 
-    #         self,
-    #         root_only)
-    #     self.Views.append(new_view)
-
-    #     if self.isRoot(): log(f"[Added View] {new_view.getString()}")
-
 
     """
     Parallel utility functions

@@ -1,7 +1,7 @@
 import pickle, os
 from tabulate import tabulate
 from .Logger import log, error, setLogFile
-from dotenv import load_dotenv
+from .Config import load_config
 
 # including numpy support
 import numpy as np
@@ -13,13 +13,13 @@ class Cache:
     def __init__(self, path=None):
 
         if path == None:
-            load_dotenv()
-            path = os.environ.get("NDUSTRIA_CACHE_DIR")
+            config = load_config()
+            path = config["NDUSTRIA_CACHE_DIR"]
 
         # if the environment variable has not been set, prompt the user
         # to run first time setup
         if path == None or path == "":
-            print("\nHello! It looks like the NDUSTRIA_CACHE_DIR environment variable has not been set.\nPlease run ndustria's first time setup with 'ndustria -s'")
+            print("\nHello! It looks like ndustria has not been setup yet.\nPlease run ndustria's first time setup with 'ndustria -s'")
             exit()
 
         self.setPath(path)
@@ -178,4 +178,4 @@ Task Information:
 
         return os.path.join(self.path, task.getFilename())
 
-    
+

@@ -3,7 +3,9 @@
 import argparse, os, sys
 import matplotlib.pyplot as plt
 import numpy as np
-from dotenv import dotenv_values, load_dotenv
+
+#from dotenv import dotenv_values, load_dotenv
+from ndustria import Config
 
 # I know what I'm about
 plt.style.use('dark_background')
@@ -57,7 +59,7 @@ args = parser.parse_args()
 
 if (args.setup):
 
-    config = dotenv_values()
+    config = Config.load_config()
 
     if NCD_ENV in config:
 
@@ -72,8 +74,8 @@ if (args.setup):
             cache_dir = os.path.expanduser(default_ncd)
 
         program_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir, os.pardir))
-        env_file = os.path.join(program_dir, ".env")
-        print(f"Creating environment file at {env_file}")
+        env_file = Config.default_config_location
+        print(f"Creating config file at {env_file}")
         with open(env_file, "w") as ef:
             ef.write(f"{NCD_ENV}={cache_dir}\n")
 
@@ -87,16 +89,19 @@ if (args.setup):
     print("ndustria is ready to run!")
 
 else:
-    config = dotenv_values()
+    config = Config.load_config()
+
+
 
     if NCD_ENV not in config:
 
-        print(f"\nHello! It looks like the {NCD_ENV} environment variable has not been set.\nPlease run ndustria's first time setup with 'ndustria -s'")
+        print(f"Please run ndustria's first time setup with 'ndustria -s'")
         exit()
 
 
-load_dotenv()
-cache_dir = os.environ.get(NCD_ENV)
+config = Config.load_config()
+
+cache_dir = config[NCD_ENV]
 
 if (args.log):
     log_file = os.path.join(cache_dir, "last_run.log")
@@ -104,6 +109,7 @@ if (args.log):
 
 if (args.cache):
     cache_info = os.path.join(cache_dir, "cache_info")
+    print(cache_info)
     os.system(f"cat {cache_info}")
 
 
