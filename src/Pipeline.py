@@ -4,8 +4,6 @@ A Pipeline is a singleton object that contains a list of Tasks and a list of Vie
 When Pipeline.run() is called, the pipeline will attempt to execute any Tasks that 
 are indicated as ready by a call to Task.readyToRun(). A Task is ready if it either
 has no dependencies, or all its dependencies have completed. 
-Once all Tasks are complete, the Pipeline will then attempt to execute all its Views. 
-Once all Views are complete, the Pipeline is done and the program will exit.
 
 """
 
@@ -24,10 +22,7 @@ import functools
 
 
 class Pipeline:
-    """Class that contains a list of Tasks and Views to execute as part of a data analysis pipeline"""
-
-    Tasks = [] 
-    """List of all Task objects in this Pipeline"""
+    """Class that contains a list of Tasks to execute as part of a data analysis pipeline"""
     
     def __init__(self, 
                  name="",
@@ -50,6 +45,9 @@ class Pipeline:
         self.timeit=timeit
         self.memcheck=memcheck
         
+        """List of all Task objects in this Pipeline"""
+        self.Tasks = []
+
 
         # name the pipeline after the file that ran it w/o .py
         # TODO: get basename from filepath as well
@@ -59,12 +57,8 @@ class Pipeline:
             self.name = name
         self.cache = Cache()
 
-        # TODO: This should get a communicator with a subset of the processes
-        # according to how many tasks it has
+        # TODO: Reconsider using the world comm
         self.comm = MPI.COMM_WORLD
-
-        #if self.isRoot():
-            #log(f"---\nPipeline {self.name} created with cache located at {self.cache.path}\n---\n")
 
 
     def AddFunction(self, rerun=False):
@@ -154,7 +148,7 @@ class Pipeline:
             self.clearCache()
 
         if self.memcheck:
-            tracemalloc.start(25) # TODO: Move this to .env
+            tracemalloc.start(25) # TODO: Move this to config file
 
         self.comm.Barrier()
 
@@ -214,39 +208,6 @@ class Pipeline:
         if self.isRoot(): log(f"Finished all tasks after {iterations} iterations")
 
         run_this_iteration = []
-        # waiting = [view for view in self.Views]
-
-        # if self.isRoot(): log(f"---\n {len(waiting)} views remaining.\n---\n")
-
-        # while len(waiting) > 0 and iterations < MAX_ITERATIONS:
-        #     iterations+=1
-
-        #     run_this_iteration = [view for view in waiting if view.readyToRun()]
-
-        #     for i, view in enumerate(run_this_iteration):
-
-        #         if view.root_only:
-        #             if self.isRoot(): 
-        #                 log(f"[Rank {self.getCommRank()}] running: " + view.getString())
-        #                 view.run()
-        #             else:
-        #                 view.shown = True
-        #         elif i % self.getCommSize() == self.getCommRank():
-        #             log(f"[Rank {self.getCommRank()}] running: " + view.getString())
-        #             view.run()
-        #         else:
-        #             view.shown = True
-        #         # end if
-        #     # end for view 
-
-        #     self.comm.Barrier()
-
-        #     waiting = [view for view in self.Views if not view.shown]
-        # # end while
-
-        # if self.isRoot(): log(f"---\n Completed all views .\n---\n")
-
-        # end Views while loop
 
         # TODO: Fix this so it works in parallel
         if self.timeit:
@@ -269,13 +230,13 @@ class Pipeline:
     def printCacheInfo(self):
         """Prints the cache info file to console. Not supported on Windows"""
 
-        # because windows users can fucking die
+        # TODO: change this to something that would work on Windows
         os.system(f"cat {self.cache.info_file}")
 
     def printLog(self):
         """Prints the log file to console. Not supported on Windows"""
 
-        # because windows users can fucking die
+        # TODO: change this to something that would work on Windows
         os.system(f"cat {self.cache.log_file}")
 
     def clearCache(self):
