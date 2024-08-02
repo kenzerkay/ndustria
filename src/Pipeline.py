@@ -187,7 +187,7 @@ class Pipeline:
                         # Mark this Task done on other processes
                         # TODO: Gather Task successes and failures at the
                         # current Barrier step
-                        task.status == DONE
+                        task.status = DONE
                 else:
                     task.run()
 

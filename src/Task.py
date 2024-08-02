@@ -170,6 +170,8 @@ class Task:
 
         return self.getResult().__iter__()
 
+    #TODO: This function does not get called anywhere? 
+    # What was this supposed to be for? 
     def rerun(self, value=True):
         """Allows individual Task instances to be rerun. Useful for debugging."""
         if value:
