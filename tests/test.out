@@ -1,0 +1,13 @@
+Timer unit: 1e-09 s
+
+Total time: 0.000836926 s
+File: /home/kenzerkay/GitHubProjects/ndustria/tests/basic_test.py
+Function: create_random_array at line 8
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+     8                                           @pipe.AddFunction(rerun = rr)
+     9                                           def create_random_array(N=10):
+    10         1     836329.0 836329.0     99.9      arr = np.random.rand(N)
+    11         1        597.0    597.0      0.1      return arr
+

@@ -51,7 +51,7 @@ small_subset = filterLargeDataset(path_to_dataset, filter_parameters)
 ```
 
 
-Ndustria implements a wrapper for long-running code that saves the result of that 
+ndustria implements a wrapper for long-running code that saves the result of that 
 work and reuses and recycles it wherever it's needed. 
 
 

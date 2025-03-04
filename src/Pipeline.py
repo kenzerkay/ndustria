@@ -16,6 +16,7 @@ from .Logger import log, error
 import os, sys, tracemalloc
 
 from mpi4py import MPI
+from line_profiler import LineProfiler
 
 import functools
 
@@ -30,8 +31,9 @@ class Pipeline:
                  parallel=False,
                  dryrun=False,
                  timeit=True,
-                 memcheck=False
-        ):
+                 memcheck=False,
+                 profiling=False
+                 ):
         """Keyword arguments:
         name -- A name to give the pipeline for organizational purposes. If left blank, it will derive the name from the file used to run the code
         rerun -- If True, removes any previous Task results from the cache. Causes every Task to run from scratch.
@@ -45,6 +47,7 @@ class Pipeline:
         self.dryrun=dryrun
         self.timeit=timeit
         self.memcheck=memcheck
+        self.profiling=profiling
         
 
         # name the pipeline after the file that ran it w/o .py
@@ -111,7 +114,6 @@ class Pipeline:
             # end if
         # end if
 
-
         return new_task
 
 
@@ -151,6 +153,9 @@ class Pipeline:
 
         if self.memcheck:
             tracemalloc.start(25) # TODO: Move this to .env
+
+        if self.profiling:
+            print("Understanding Anything?")
 
         self.comm.Barrier()
 
@@ -220,10 +225,18 @@ class Pipeline:
 
         if self.memcheck:
             memcheck_data_file = os.path.join(self.cache.path, f"{self.name}_memcheck.csv")
-
             with open(memcheck_data_file, "w") as memcheck_data:
                 for task in self.Tasks:
                     memcheck_data.write(f"{task.user_function.__name__}, {task.initial_mem}, {task.final_mem}, {task.peak_mem}\n")
+
+        if self.profiling:
+            profiling_data_file = os.path.join(self.cache.path, f"{self.name}_profile.txt")
+            with open(profiling_data_file, "w") as profile_data:
+                for task in self.Tasks:
+                    profile_data.write(f"{task.user_function.__name__}, {task.initial_mem}, {task.final_mem}, {task.peak_mem}\n")
+
+
+
 
         if self.isRoot(): log("All done.")
           
@@ -327,44 +340,3 @@ class Pipeline:
         os.system(rm_cmd)
 
 
-
-
-
-
-# from .View import View
-
-        
-        # run_this_iteration = []
-        # waiting = [view for view in self.Views]
-
-        # if self.isRoot(): log(f"---\n {len(waiting)} views remaining.\n---\n")
-
-        # while len(waiting) > 0 and iterations < MAX_ITERATIONS:
-        #     iterations+=1
-
-        #     run_this_iteration = [view for view in waiting if view.readyToRun()]
-
-        #     for i, view in enumerate(run_this_iteration):
-
-        #         if view.root_only:
-        #             if self.isRoot(): 
-        #                 log(f"[Rank {self.getCommRank()}] running: " + view.getString())
-        #                 view.run()
-        #             else:
-        #                 view.shown = True
-        #         elif i % self.getCommSize() == self.getCommRank():
-        #             log(f"[Rank {self.getCommRank()}] running: " + view.getString())
-        #             view.run()
-        #         else:
-        #             view.shown = True
-        #         # end if
-        #     # end for view 
-
-        #     self.comm.Barrier()
-
-        #     waiting = [view for view in self.Views if not view.shown]
-        # # end while
-
-        # if self.isRoot(): log(f"---\n Completed all views .\n---\n")
-
-        # end Views while loop

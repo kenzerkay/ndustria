@@ -30,7 +30,10 @@ and the Task will be rerun.
 """
 
 import inspect, hashlib, time, tracemalloc
-from .Logger import log, warn, debug
+from line_profiler import LineProfiler
+from .Logger import log, warn
+
+import sys
 
 # Task status codes
 WAITING = 0 # waiting on dependencies to finish first
@@ -181,10 +184,25 @@ class Task:
         if self.pipeline.memcheck:
             self.initial_mem, self.peak_mem = tracemalloc.get_traced_memory()
 
+
         ###################################################################
         # Run the actual function
         ###################################################################
-        self.result = self.user_function(*arguments, **kwarguments)   
+
+        if self.pipeline.profiling:
+            lp = LineProfiler()
+            lp_wrapper = lp(self.user_function)
+            lp_wrapper(*arguments, **kwarguments)
+            
+            with open("test.out", 'w') as f:
+                sys.stdout = f
+                lp.print_stats()
+            f.close()
+  
+            self.result = self.user_function(*arguments, **kwarguments)   
+
+        else:
+            self.result = self.user_function(*arguments, **kwarguments)   
 
         ###################################################################
         # If the result is a string, assume its a filename

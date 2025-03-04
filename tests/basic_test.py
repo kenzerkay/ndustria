@@ -1,7 +1,7 @@
 from ndustria import Pipeline
 import numpy as np
 
-pipe = Pipeline(timeit=True, memcheck=True)
+pipe = Pipeline(timeit=True, memcheck=True, profiling=True)
 
 rr = True
 
@@ -12,6 +12,8 @@ def create_random_array(N=10):
 
 @pipe.AddFunction(rerun = rr)
 def do_analysis(data):
+
+    print(data)
 
     result = {
         "sum" : np.sum(data),
