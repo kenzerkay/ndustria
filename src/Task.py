@@ -30,14 +30,13 @@ and the Task will be rerun.
 """
 
 import inspect, hashlib, time, tracemalloc
-from .Logger import log, warn
+from .Logger import log, warn, debug
 
 # Task status codes
 WAITING = 0 # waiting on dependencies to finish first
 READY   = 1 # all dependencies finished, ready to execute
 RUNNING = 2 # currently running
 DONE    = 3 # finished running, result in memory
-
 
 class Task:
     """A Task is a the smallest unit of work performed by an analysis Pipeline"""
@@ -170,19 +169,16 @@ class Task:
 
         return self.getResult().__iter__()
 
-    #TODO: This function does not get called anywhere? 
-    # What was this supposed to be for? 
-    def rerun(self, value=True):
-        """Allows individual Task instances to be rerun. Useful for debugging."""
-        if value:
-            self.result = None
-            self.status = WAITING
-            log(f"[Rerunning Task] {self.getString()}")
+    # def rerun(self, value=True):
+    #     """Allows individual Task instances to be rerun. Useful for debugging."""
+    #     if value:
+    #         self.result = None
+    #         self.status = WAITING
+    #         log(f"[Rerunning Task] {self.getString()}")
 
-        elif not value and self.pipeline.cache.exists(self):
-            self.status = DONE
-            self.getResult()
-        
+    #     elif not value and self.pipeline.cache.exists(self):
+    #         self.status = DONE
+    #         self.getResult()
 
 
     def run(self):
@@ -218,8 +214,6 @@ class Task:
 
         if self.pipeline.memcheck:
             self.final_mem, self.peak_mem = tracemalloc.get_traced_memory()
-
-       
             
         ###################################################################
         # Save the result
@@ -250,7 +244,6 @@ class Task:
             self.result = self.pipeline.cache.load(self)
 
         return self.result
-
 
     def done(self):
         return self.status == DONE
