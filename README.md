@@ -12,7 +12,28 @@ ndustria is being built as part of a PhD dissertation and is in active developme
 
 # Installation
 
-WIP
+* Fork this repository on Github
+* Download your version with 
+
+`git clone <YOUR_VERSION_URL>`
+
+* Add `PYTHONPATH` and `PATH` to your `.bashrc` file 
+
+```
+export PYTHONPATH="$PYTHONPATH:$HOME"
+export PATH="$PATH:$HOME/ndustria/bin"
+```
+
+**MAKE SURE: `PATH` points to ndustria's bin and `PYTHONPATH` points to the installation of ndustria**
+
+* Just outside of the ndustria directory run  
+
+```
+python -m ndustria.__init__
+```
+
+* Don't forget to run `  ndustria --setup` to save your cache directory 
+
 
 # Tutorial
 
@@ -28,6 +49,7 @@ A common example would be filtering a large dataset for a small subset of data.
 small_subset = filterLargeDataset(path_to_dataset, filter_parameters)
 
 ```
+
 
 Ndustria implements a wrapper for long-running code that saves the result of that 
 work and reuses and recycles it wherever it's needed. 
