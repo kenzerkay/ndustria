@@ -1,14 +1,16 @@
 from ndustria import Pipeline
 import numpy as np
 
-pipe = Pipeline()
+pipe = Pipeline(timeit=True, memcheck=True)
 
-@pipe.AddFunction()
+rr = True
+
+@pipe.AddFunction(rerun = rr)
 def create_random_array(N=10):
     arr = np.random.rand(N)
     return arr
 
-@pipe.AddFunction()
+@pipe.AddFunction(rerun = rr)
 def do_analysis(data):
 
     result = {
@@ -45,10 +47,6 @@ for i in range(5, 8):
     analysis = do_analysis(random_arrays)
     view_data(analysis, out_file=f"data_N_{N}.txt")
 
-
-# This will actually run the functions
-pipe.run(run_all=True)
-
 # This one should skip the array creation and analysis
 # and just print the results of the last run
-#pipe.run()
+pipe.run()

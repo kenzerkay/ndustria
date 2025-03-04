@@ -1,3 +1,7 @@
+"""
+Creates Functions that are used to create the last_run.log file which is save in the NDUSTRIA_CACHE_DIR
+"""
+
 import os
 DEBUG = True
 VERBOSE = True
@@ -44,7 +48,6 @@ def error(args, fatal=True, task=None):
 
     if fatal:
         exit()
-
 
 # Convenience error function
 # for reporting on the normal functioning of the code

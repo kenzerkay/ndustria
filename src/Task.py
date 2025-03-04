@@ -169,18 +169,6 @@ class Task:
 
         return self.getResult().__iter__()
 
-    # def rerun(self, value=True):
-    #     """Allows individual Task instances to be rerun. Useful for debugging."""
-    #     if value:
-    #         self.result = None
-    #         self.status = WAITING
-    #         log(f"[Rerunning Task] {self.getString()}")
-
-    #     elif not value and self.pipeline.cache.exists(self):
-    #         self.status = DONE
-    #         self.getResult()
-
-
     def run(self):
         """Runs the Task by calling its user_function with the supplied arguments and any dependency data"""
         self.status = RUNNING

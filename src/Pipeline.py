@@ -12,16 +12,12 @@ Once all Views are complete, the Pipeline is done and the program will exit.
 import sys
 from .Task import Task, WAITING, DONE
 from .Cache import Cache
-from .View import View
 from .Logger import log, error
 import os, sys, tracemalloc
 
 from mpi4py import MPI
 
 import functools
-
-
-
 
 class Pipeline:
     """Class that contains a list of Tasks and Views to execute as part of a data analysis pipeline"""
@@ -214,41 +210,6 @@ class Pipeline:
 
         if self.isRoot(): log(f"Finished all tasks after {iterations} iterations")
 
-        run_this_iteration = []
-        # waiting = [view for view in self.Views]
-
-        # if self.isRoot(): log(f"---\n {len(waiting)} views remaining.\n---\n")
-
-        # while len(waiting) > 0 and iterations < MAX_ITERATIONS:
-        #     iterations+=1
-
-        #     run_this_iteration = [view for view in waiting if view.readyToRun()]
-
-        #     for i, view in enumerate(run_this_iteration):
-
-        #         if view.root_only:
-        #             if self.isRoot(): 
-        #                 log(f"[Rank {self.getCommRank()}] running: " + view.getString())
-        #                 view.run()
-        #             else:
-        #                 view.shown = True
-        #         elif i % self.getCommSize() == self.getCommRank():
-        #             log(f"[Rank {self.getCommRank()}] running: " + view.getString())
-        #             view.run()
-        #         else:
-        #             view.shown = True
-        #         # end if
-        #     # end for view 
-
-        #     self.comm.Barrier()
-
-        #     waiting = [view for view in self.Views if not view.shown]
-        # # end while
-
-        # if self.isRoot(): log(f"---\n Completed all views .\n---\n")
-
-        # end Views while loop
-
         # TODO: Fix this so it works in parallel
         if self.timeit:
             # save it to cache for internal use
@@ -364,3 +325,46 @@ class Pipeline:
         # delete temp folder
         rm_cmd = f"rm -r {temp_dir}"
         os.system(rm_cmd)
+
+
+
+
+
+
+# from .View import View
+
+        
+        # run_this_iteration = []
+        # waiting = [view for view in self.Views]
+
+        # if self.isRoot(): log(f"---\n {len(waiting)} views remaining.\n---\n")
+
+        # while len(waiting) > 0 and iterations < MAX_ITERATIONS:
+        #     iterations+=1
+
+        #     run_this_iteration = [view for view in waiting if view.readyToRun()]
+
+        #     for i, view in enumerate(run_this_iteration):
+
+        #         if view.root_only:
+        #             if self.isRoot(): 
+        #                 log(f"[Rank {self.getCommRank()}] running: " + view.getString())
+        #                 view.run()
+        #             else:
+        #                 view.shown = True
+        #         elif i % self.getCommSize() == self.getCommRank():
+        #             log(f"[Rank {self.getCommRank()}] running: " + view.getString())
+        #             view.run()
+        #         else:
+        #             view.shown = True
+        #         # end if
+        #     # end for view 
+
+        #     self.comm.Barrier()
+
+        #     waiting = [view for view in self.Views if not view.shown]
+        # # end while
+
+        # if self.isRoot(): log(f"---\n Completed all views .\n---\n")
+
+        # end Views while loop

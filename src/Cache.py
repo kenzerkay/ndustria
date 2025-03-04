@@ -31,7 +31,6 @@ class Cache:
     # end init
 
 
-
     def writeCacheInfo(self):
 
         table_out = []
@@ -158,7 +157,6 @@ Task Information:
 
     # end setPath
     
-  
     def loadTable(self):
 
         try:
