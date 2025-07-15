@@ -31,14 +31,6 @@ export PATH="$PATH:$HOME/ndustria/bin"
 ```
 python -m ndustria.__init__
 ```
-
-* Line profiler is a dependency 
-* conda intall tabulate
-* conda install numpy
-* Conda install mpi4py
-* conda install matplotlib
-
-
 * Don't forget to run `  ndustria --setup` to save your cache directory 
 
 
