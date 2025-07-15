@@ -16,8 +16,5 @@ dependencies = [
     "mpi4py",
     "openmpi",
     "matplotlib",
-]
+] 
 requires-python = ">=3.8"
-
-[project.scripts]
-ndustria-setup = "ndustria.setup:main"
