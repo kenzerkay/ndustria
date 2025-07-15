@@ -12,7 +12,9 @@ authors = [{name = "Mackenzie Ticoras", email = "scottm59@msu.edu"}]
 dependencies = [
     "numpy",
     "tabulate", 
-    "mpi4py", 
+    "line_profiler",
+    "mpi4py",
+    "openmpi",
     "matplotlib",
 ]
 requires-python = ">=3.8"
