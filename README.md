@@ -12,27 +12,29 @@ ndustria is being built as part of a PhD dissertation and is in active developme
 
 # Installation
 
-* Fork this repository on Github
-* Download your version with 
-
-`git clone <YOUR_VERSION_URL>`
-
-* Add `PYTHONPATH` and `PATH` to your `.bashrc` file 
-
+Clone Repository from github and enter into the directory
 ```
-export PYTHONPATH="$PYTHONPATH:$HOME"
-export PATH="$PATH:$HOME/ndustria/bin"
+git clone <YOUR_VERSION_URL>
+cd ndustria
 ```
 
-**MAKE SURE: `PATH` points to ndustria's bin and `PYTHONPATH` points to the installation of ndustria**
-
-* Just outside of the ndustria directory run  
-
+Pip install the package and run the set up bash script
 ```
-python -m ndustria.__init__
+pip install -e .
+bash setup.sh
 ```
-* Don't forget to run `  ndustria --setup` to save your cache directory 
 
+Reinitialize .bashrc file 
+```
+cd
+source .bashrc
+```
+If you are use an environment (like conda) you may need to reinitialize it after you run `source .bashrc`
+
+Check that you can import and use ndustria
+```
+python -c "from ndustria import Pipeline"
+```
 
 # Tutorial
 
@@ -41,18 +43,12 @@ of your analysis pipeline such that everything downstream of that code has to wa
 for it. 
 
 A common example would be filtering a large dataset for a small subset of data. 
-
-
 ```
 # this takes a long time to run, 
 small_subset = filterLargeDataset(path_to_dataset, filter_parameters)
-
 ```
-
-
 ndustria implements a wrapper for long-running code that saves the result of that 
 work and reuses and recycles it wherever it's needed. 
-
 
 Here's what wrapping your code looks like
 ```
@@ -87,12 +83,10 @@ we assign the result of `filterLargeTask` to a variable and pass it along to the
 of the pipeline. 
 
 ```
-
 @pipe.AddFunction()
 def analyzeTheData(the_data)
 
     return Analyze(the_data)
-
 
 my_data = filterLargeTask(path_to_dataset, filter_parameters) # <-- does not actually run the code, just sets it up to run later
 analyzeTheData(my_data) # <-- still haven't run anything yet, just getting set up

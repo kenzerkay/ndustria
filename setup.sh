@@ -19,3 +19,5 @@ if ! grep -Fxq "$LINE3" ~/.bashrc; then
 fi
 
 echo "💡 Done! Please run: source ~/.bashrc"
+
+ndustria --setup

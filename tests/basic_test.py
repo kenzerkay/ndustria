@@ -1,20 +1,15 @@
 from ndustria import Pipeline
 import numpy as np
 
-pipe = Pipeline(timeit=True, memcheck=True, profiling=True)
+pipe = Pipeline()
 
-rr = True
-
-@pipe.AddFunction(rerun = rr)
+@pipe.AddFunction()
 def create_random_array(N=10):
     arr = np.random.rand(N)
     return arr
 
-@pipe.AddFunction(rerun = rr)
+@pipe.AddFunction()
 def do_analysis(data):
-
-    print(data)
-
     result = {
         "sum" : np.sum(data),
         "mean" : np.mean(data),
@@ -23,32 +18,32 @@ def do_analysis(data):
     }
     return result
 
-@pipe.AddFunction(rerun=True)
+@pipe.AddFunction()
 def view_data(data, out_file="data.txt"):
 
-    f = open(out_file, "w")
-
+    # Create a string that holds our analysis information 
     data_string = f"""
-Viewing data for {data['length']} random numbers: 
+        Viewing data for {data['length']} random numbers: 
         Sum     : {data['sum']}
         Mean    : {data['mean']}
         Std dev : {data['std']}
-"""
+    """
 
+    # Print results to terminal
     print(data_string)
 
-    print(data_string, file=f)
-          
+    # Save results to file 
+    f = open(out_file, "a")
+    f.write(data_string) 
     f.close()
     return out_file
           
+def main(): 
+    for i in range(3, 8):
+        random_arrays = create_random_array(N=10**i)
+        analysis = do_analysis(random_arrays)
+        view_data(analysis, out_file=f"basic_test.txt" )
 
-for i in range(5, 8):
-    N = 10**i
-    random_arrays = create_random_array(N=N)
-    analysis = do_analysis(random_arrays)
-    view_data(analysis, out_file=f"data_N_{N}.txt")
+    pipe.run()
 
-# This one should skip the array creation and analysis
-# and just print the results of the last run
-pipe.run()
+main()

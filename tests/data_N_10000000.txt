@@ -1,6 +1,0 @@
-
-Viewing data for 10000000 random numbers: 
-        Sum     : 4999182.907964609
-        Mean    : 0.4999182907964609
-        Std dev : 0.28866491078926515
-
