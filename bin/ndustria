@@ -91,13 +91,10 @@ if (args.setup):
 else:
     config = Config.load_config()
 
-
-
     if NCD_ENV not in config:
 
         print(f"Please run ndustria's first time setup with 'ndustria -s'")
         exit()
-
 
 config = Config.load_config()
 
@@ -111,7 +108,6 @@ if (args.cache):
     cache_info = os.path.join(cache_dir, "cache_info")
     print(cache_info)
     os.system(f"cat {cache_info}")
-
 
 if (args.timeit):
 
