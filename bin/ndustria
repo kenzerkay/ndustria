@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 
-import argparse, os, sys
+import argparse, os 
 import matplotlib.pyplot as plt
 import numpy as np
-
-#from dotenv import dotenv_values, load_dotenv
-from ndustria import Config
 
 # I know what I'm about
 plt.style.use('dark_background')
@@ -15,21 +12,17 @@ usage_string = """
 This is a utility script for ndustria that performs some useful functions to help
 debug and monitor code pipelines. 
 
-Set up ndustria for the first time (saves path to cache dir in env file):
-ndustria -s
-ndustria --setup
-
 See what's in the cache:
 ndustria -c 
 ndustria --cache
 
 Make a plot of timing data (requires running with timeit=True):
 ndustria -t
-ndustria --timeit
+ndustria --timeit <name-of-file>
 
 Make a plot of memory usage (requires running with memcheck=True):
 ndustria -m
-ndustria --memcheck
+ndustria --memcheck <name-of-file>
 
 See the log of the last run pipeline:
 ndustria -l
@@ -38,17 +31,14 @@ ndustria --log
 If you want to run all of ndustria's unit tests:
 ndustria -r
 ndustria --runtests
-"""
 
-# NCD -> Ndustria Cache Dir
-NCD_ENV="NDUSTRIA_CACHE_DIR"
-default_ncd = "~/.ndustria_cache"
+"""
 
 parser = argparse.ArgumentParser(
     prog="ndustria",
     usage=usage_string
 )
-parser.add_argument('-s', '--setup', action='store_true')
+
 parser.add_argument('-c', '--cache', action='store_true')
 parser.add_argument('-t', '--timeit', action='store', type=str)
 parser.add_argument('-m', '--memcheck', action='store', type=str)
@@ -57,58 +47,30 @@ parser.add_argument('-r', '--runtests', action='store_true')
 
 args = parser.parse_args()
 
-if (args.setup):
+# Find Cache Directory
+cache_dir = ""
+try:
+    with open(os.path.expanduser('~/.ndustria_config'), 'r') as file:
+        content = file.read()
+        c_dir = content.replace("NDUSTRIA_CACHE_DIR=",'')
+        cache_dir = c_dir.strip()
+except FileNotFoundError:
+    print("Error: The file '~/.ndustria_config' was not found.")
+except PermissionError:
+    print("Error: Permission denied to read ~/.ndustria_config.")
 
-    config = Config.load_config()
-
-    if NCD_ENV in config:
-
-        cache_dir = os.path.abspath(config[NCD_ENV])
-
-    else:
-        print("Performing first time setup...")
-
-        cache_dir = input(f"Please let me know where you'd like ndustria to keep cached files (default: {default_ncd})")
-        cache_dir = cache_dir.strip()
-        if cache_dir == "":
-            cache_dir = os.path.expanduser(default_ncd)
-
-        program_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir, os.pardir))
-        env_file = Config.default_config_location
-        print(f"Creating config file at {env_file}")
-        with open(env_file, "w") as ef:
-            ef.write(f"{NCD_ENV}={cache_dir}\n")
-
-        
-    if os.path.exists(cache_dir):
-        print(f"Found ndustria cache at {cache_dir}")
-    else:
-        print(f"Creating new directory at {cache_dir}")
-        os.mkdir(cache_dir)
-
-    print("ndustria is ready to run!")
-
-else:
-    config = Config.load_config()
-
-    if NCD_ENV not in config:
-
-        print(f"Please run ndustria's first time setup with 'ndustria -s'")
-        exit()
-
-config = Config.load_config()
-
-cache_dir = config[NCD_ENV]
-
+# Output log file of last run out on terminal
 if (args.log):
     log_file = os.path.join(cache_dir, "last_run.log")
     os.system(f"cat {log_file}")
 
+# Output cache info file out on terminal 
 if (args.cache):
     cache_info = os.path.join(cache_dir, "cache_info")
     print(cache_info)
     os.system(f"cat {cache_info}")
 
+# Output Timing info 
 if (args.timeit):
 
     script_name = os.path.basename(args.timeit).replace(".py", '')
@@ -186,5 +148,10 @@ if (args.memcheck):
 
     plt.title("Memory usage by function")
     plt.show()
+
+
+
+
+
 
 

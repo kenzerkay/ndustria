@@ -14,6 +14,7 @@ from .Task import Task, WAITING, DONE
 from .Cache import Cache
 from .Logger import log, error
 import os, sys, tracemalloc
+import io
 
 from mpi4py import MPI
 from line_profiler import LineProfiler
@@ -30,13 +31,12 @@ class Pipeline:
                  name="",
                  parallel=False,
                  dryrun=False,
-                 timeit=True,
+                 timeit=False,
                  memcheck=False,
                  profiling=False
                  ):
         """Keyword arguments:
         name -- A name to give the pipeline for organizational purposes. If left blank, it will derive the name from the file used to run the code
-        rerun -- If True, removes any previous Task results from the cache. Causes every Task to run from scratch.
         parallel -- If True, uses a round robin approach to assign Tasks to multiple processes and runs them in parallel
         dryrun -- If True, skips running Tasks but does everything else, including creating log files. Used to test complex pipelines
         timeit -- If True, keeps track of wallclock time of each Task. These data will be output to a csv file in the cache. Set to True by default due to low overhead
@@ -65,7 +65,6 @@ class Pipeline:
         #if self.isRoot():
             #log(f"---\nPipeline {self.name} created with cache located at {self.cache.path}\n---\n")
 
-
     def AddFunction(self, rerun=False):
         def outer_wrapper(user_function):
             @functools.wraps(user_function)
@@ -80,7 +79,6 @@ class Pipeline:
 
             return inner_wrapper        
         return outer_wrapper
-
 
     def _addTask(self, 
         user_function, 
@@ -135,9 +133,9 @@ class Pipeline:
     """
     The main Task running function
     """
-    def run(self, run_all=False):
+    def run(self, run_all=False): 
         """
-        Runs a pipeline composed of ndustria Tasks and Views
+        Runs a pipeline , composed of ndustria Tasks and Views
 
         Step 1. Write functions that represent each stage of your analysis pipeline
         Step 2. Decorate your functions with the addTask and addView decorators as appropriate
@@ -154,8 +152,8 @@ class Pipeline:
         if self.memcheck:
             tracemalloc.start(25) # TODO: Move this to .env
 
-        if self.profiling:
-            print("Understanding Anything?")
+        # if self.profiling:
+        #     print("Understanding Anything?")
 
         self.comm.Barrier()
 
@@ -230,12 +228,17 @@ class Pipeline:
                     memcheck_data.write(f"{task.user_function.__name__}, {task.initial_mem}, {task.final_mem}, {task.peak_mem}\n")
 
         if self.profiling:
-            profiling_data_file = os.path.join(self.cache.path, f"{self.name}_profile.txt")
-            with open(profiling_data_file, "w") as profile_data:
-                for task in self.Tasks:
-                    profile_data.write(f"{task.user_function.__name__}, {task.initial_mem}, {task.final_mem}, {task.peak_mem}\n")
+            output_stream = io.StringIO()
+            task.line_profile.print_stats(stream=output_stream)
+            with open("profile_output.txt", "w") as f:
+                f.write(output_stream.getvalue())
 
 
+            # profiling_data_file = os.path.join(self.cache.path, f"{self.name}_profile.txt")
+            # with open(profiling_data_file, "w") as profile_data:
+            #     for task in self.Tasks:
+            #         output_stream = io.StringIO()
+            #         task.line_profile.print_stats()
 
 
         if self.isRoot(): log("All done.")

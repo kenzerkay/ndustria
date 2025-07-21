@@ -69,6 +69,7 @@ class Task:
         self.initial_mem = 0
         self.peak_mem = 0
         self.final_mem = 0
+        self.line_profile = LineProfiler()
 
         # True if the Task has no dependencies
         self.indepedent = True
@@ -103,7 +104,6 @@ class Task:
             self.status = DONE
             self.getResult()
             
-
     # end __init__      
         
 
@@ -177,32 +177,23 @@ class Task:
         self.status = RUNNING
         arguments, kwarguments = Task.parseArgs(self.args, self.kwargs)
 
-
         if self.pipeline.timeit: 
             start = time.time()
 
         if self.pipeline.memcheck:
             self.initial_mem, self.peak_mem = tracemalloc.get_traced_memory()
-
+        
+        if self.pipeline.profiling:
+            lp = LineProfiler()
+            lp_wrapper = lp(self.user_function)
+            lp_wrapper(*arguments, **kwarguments)
+            self.line_profile = lp
 
         ###################################################################
         # Run the actual function
         ###################################################################
 
-        if self.pipeline.profiling:
-            lp = LineProfiler()
-            lp_wrapper = lp(self.user_function)
-            lp_wrapper(*arguments, **kwarguments)
-            
-            with open("test.out", 'w') as f:
-                sys.stdout = f
-                lp.print_stats()
-            f.close()
-  
-            self.result = self.user_function(*arguments, **kwarguments)   
-
-        else:
-            self.result = self.user_function(*arguments, **kwarguments)   
+        self.result = self.user_function(*arguments, **kwarguments)   
 
         ###################################################################
         # If the result is a string, assume its a filename

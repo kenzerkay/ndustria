@@ -39,7 +39,7 @@ def view_data(data, out_file="data.txt"):
     return out_file
           
 def main(): 
-    for i in range(3, 8):
+    for i in range(5, 10):
         random_arrays = create_random_array(N=10**i)
         analysis = do_analysis(random_arrays)
         view_data(analysis, out_file=f"basic_test.txt" )

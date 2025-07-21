@@ -1,0 +1,15 @@
+Timer unit: 1e-09 s
+
+Total time: 0.103162 s
+File: /home/kenzerkay/ndustria/tests/pipeline_kwargs.py
+Function: matrix_multiplication at line 6
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+     6                                           @pipe.AddFunction(rerun = True)
+     7                                           def matrix_multiplication(N=10):
+     8         1   41850184.0    4e+07     40.6      matrix_1 = np.random.rand(N, N)
+     9         1   17362778.0    2e+07     16.8      matrix_2 = np.random.rand(N, N)
+    10         1   43942338.0    4e+07     42.6      result_matrix = np.matmul(matrix_1, matrix_2)
+    11         1       6670.0   6670.0      0.0      return result_matrix
+

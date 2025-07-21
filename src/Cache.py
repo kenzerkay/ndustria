@@ -1,7 +1,7 @@
 import pickle, os
 from tabulate import tabulate
 from .Logger import log, error, setLogFile
-from .Config import load_config
+# from .Config import load_config
 
 # including numpy support
 import numpy as np
@@ -13,8 +13,17 @@ class Cache:
     def __init__(self, path=None):
 
         if path == None:
-            config = load_config()
-            path = config["NDUSTRIA_CACHE_DIR"]
+            path = ""
+            try:
+                with open(os.path.expanduser('~/.ndustria_config'), 'r') as file:
+                    content = file.read()
+                    p = content.replace("NDUSTRIA_CACHE_DIR=",'')
+                    path = p.strip()
+            except FileNotFoundError:
+                print("Error: The file '~/.ndustria_config' was not found.")
+            except PermissionError:
+                print("Error: Permission denied to read ~/.ndustria_config.")
+
 
         # if the environment variable has not been set, prompt the user
         # to run first time setup
