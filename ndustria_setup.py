@@ -1,6 +1,12 @@
 import os
 from pathlib import Path
 
+# Default "cache" and config location
+NCD_ENV="NDUSTRIA_CACHE_DIR"
+default_config_location = os.path.expanduser("~/.ndustria_config")
+default_cache_location = os.path.expanduser("~/.ndustria_cache")
+
+# Add files to path 
 PY_LINE = 'export PYTHONPATH="$PYTHONPATH:$HOME"'
 PATH_LINE = 'export PATH="$PATH:$HOME/ndustria/bin"'
 FISH_PY_LINE = 'set -gx PYTHONPATH $PYTHONPATH $HOME'
@@ -26,7 +32,7 @@ def append_if_missing(file_path, lines):
                 print(f"[INFO] Added to {file_path.name}: {line}")
             else:
                 print(f"[INFO] Already in {file_path.name}: {line}")
-
+    
 def main():
     shell_type = detect_shell()
     home = Path.home()
@@ -51,5 +57,23 @@ def main():
         print(PY_LINE)
         print(PATH_LINE)
 
+    cache_dir = input(f"Please let me know where you'd like ndustria to keep cached files (default: {default_cache_location})")
+    cache_dir = cache_dir.strip()
+    if cache_dir == "":
+            cache_dir = os.path.expanduser(default_cache_location)
+
+    if os.path.exists(cache_dir):
+        print(f"Found ndustria cache at {cache_dir}")
+    else:
+        print(f"Creating new directory at {cache_dir}")
+        os.mkdir(cache_dir)
+
+        print(f"Creating config file at {default_config_location}")
+        with open(default_config_location, "w") as ef:
+            ef.write(f"{NCD_ENV}={cache_dir}\n")
+
+    print("ndustria is ready to run!")
+
 if __name__ == "__main__":
     main()
+
