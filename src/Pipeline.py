@@ -228,18 +228,12 @@ class Pipeline:
                     memcheck_data.write(f"{task.user_function.__name__}, {task.initial_mem}, {task.final_mem}, {task.peak_mem}\n")
 
         if self.profiling:
-            output_stream = io.StringIO()
-            task.line_profile.print_stats(stream=output_stream)
-            with open("profile_output.txt", "w") as f:
-                f.write(output_stream.getvalue())
-
-
-            # profiling_data_file = os.path.join(self.cache.path, f"{self.name}_profile.txt")
-            # with open(profiling_data_file, "w") as profile_data:
-            #     for task in self.Tasks:
-            #         output_stream = io.StringIO()
-            #         task.line_profile.print_stats()
-
+            profiling_data_file = os.path.join(self.cache.path, f"{self.name}_profile.txt")
+            with open(profiling_data_file, "w") as profile_data:
+                for task in self.Tasks:
+                    output_stream = io.StringIO()
+                    task.line_profile.print_stats(stream=output_stream)
+                    profile_data.write(output_stream.getvalue())
 
         if self.isRoot(): log("All done.")
           

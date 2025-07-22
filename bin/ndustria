@@ -17,12 +17,16 @@ ndustria -c
 ndustria --cache
 
 Make a plot of timing data (requires running with timeit=True):
-ndustria -t
+ndustria -t <name-of-file>
 ndustria --timeit <name-of-file>
 
 Make a plot of memory usage (requires running with memcheck=True):
-ndustria -m
+ndustria -m <name-of-file>
 ndustria --memcheck <name-of-file>
+
+See results of profiling: 
+ndustria -p <name-of-file>
+ndustria -- profiling <name-of-file>
 
 See the log of the last run pipeline:
 ndustria -l
@@ -43,6 +47,7 @@ parser.add_argument('-c', '--cache', action='store_true')
 parser.add_argument('-t', '--timeit', action='store', type=str)
 parser.add_argument('-m', '--memcheck', action='store', type=str)
 parser.add_argument('-l', '--log', action='store_true')
+parser.add_argument('-p', '--profiling', action='store', type=str)
 parser.add_argument('-r', '--runtests', action='store_true')
 
 args = parser.parse_args()
@@ -69,6 +74,17 @@ if (args.cache):
     cache_info = os.path.join(cache_dir, "cache_info")
     print(cache_info)
     os.system(f"cat {cache_info}")
+
+
+if (args.profiling):
+    script_name = os.path.basename(args.profiling).replace(".py", '')
+    prof_data_file = os.path.join(cache_dir, f"{script_name}_profile.txt")
+
+    if not os.path.isfile(prof_data_file):
+        print(f"[Error] {prof_data_file} not found. Try re-running your pipeline with timeit=True")
+        exit()
+
+    os.system(f"cat {prof_data_file}")
 
 # Output Timing info 
 if (args.timeit):
