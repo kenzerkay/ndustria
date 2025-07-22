@@ -1,7 +1,7 @@
 from ndustria import Pipeline
 import numpy as np
 
-pipe = Pipeline(name="kwargs", profiling = True) # parallel = True, timeit = True, memcheck=True) # profiling = True 
+pipe = Pipeline(name="kwargs", parallel = False, timeit = True, profiling=True)
 
 @pipe.AddFunction(rerun = True)
 def matrix_multiplication(N=10):

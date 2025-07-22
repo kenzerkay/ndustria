@@ -1,6 +1,9 @@
-# Industrialize the process of data mining with ndustria! 
+# Industrialize the process of data mining with ndustria! (WIP)
 
-# Main features (WIP)
+## ToDo:
+* Profiling in parallel
+
+# Main features 
 
 * Simple multiprocess parallelization of arbitrary python code
 * Dynamic load balancing
@@ -24,12 +27,14 @@ pip install ndustria
 ndustria-init
 ```
 
+Since we have added things to path we need reinitialize the shell environment. If you are running bash use:
 ```
 cd
 source .bashrc
 ```
+If you are using another shell use the corresponding command.  
 
-Check that you can import and use ndustria
+You can now check that you can import and use ndustria
 ```
 python -c "from ndustria import Pipeline"
 ```
@@ -59,7 +64,6 @@ python -c "from ndustria import Pipeline"
 ```
 
 # How ndustria works
-
 ndustria works by creating a `Pipeline()` or list of tasks. Each independent task should be separated into a different function and we can use the `*.AddFunction()` decorator to add this task to the Pipeline. The information in the return statement will be saved to disk and can be used by other task both during this run of the script and for other runs. For Example:
 
 ```
@@ -77,8 +81,6 @@ def filterLargeTask(path, filter_params):   # <-- 4. Function that surrounds you
 ```
 
 Once you have added one or more functions to your `Pipeline()` you can use `pipe.run()` to execute your whole Pipeline. To see this in action please follow the **Tutorial**
-
-
 
 # Tutorials
 
@@ -113,7 +115,7 @@ We can breakdown the terminal outputs to better understand how ndustria woks. Th
 ---
 ```
 
-ndustria is able to detect which tasks depend on other tasks and will run independent tasks first and then continue onto other tasks that require the results of previous tasks. For example we can see that ndustria performs all of the `matrix_multiplication` tasks first and then `matrix_parameters` tasks even though this is not the order they would be executed in without ndustria. We can see this because ndustria saves the results to all 5 `matrix_multiplication` tasks before moving onto any of the `matrix_parameters` tasks. This behavior is implemented for better resource utilization in parallel programs which will be discussed later. 
+ndustria is able to detect which tasks depend on other tasks and will run independent tasks first and then continue onto other tasks that require the results of previous tasks. For example, we can see below that ndustria performs all of the `matrix_multiplication` tasks first and then `matrix_parameters` tasks even though this is not the order they would be executed in without ndustria. We can see this because ndustria saves the results to all 5 `matrix_multiplication` tasks before moving onto any of the `matrix_parameters` tasks. This behavior is implemented for better resource utilization in parallel programs which will be discussed later. 
 
 ```
 Saved result of matrix_multiplication(N=1024) to /home/kenzerkay/.ndustria_cache/56c6f56aa673d1699f3e6a8bfe12410f
@@ -236,79 +238,125 @@ Here ndustria runs the `matrix_parameters` tasks as instructed but does not run 
 
 ## Pipeline Keyword Arguments 
 
-While `rerun` is the only keyword argument for individual decorators. ndustria `Pipelines` have a number of kwargs that can help you configure the run.
-They are the following:
-
-### Keyword arguments:
-* name -- A name to give the pipeline for organizational purposes. If left blank, it will derive the name from the file used to run the code
-* parallel -- If True, uses a round robin approach to assign Tasks to multiple processes and runs them in parallel
-* dryrun -- If True, skips running Tasks but does everything else, including creating log files. Used to test complex pipelines
-* timeit -- If True, keeps track of wallclock time of each Task. These data will be output to a csv file in the cache. Set to True by default due to low overhead
-* memcheck -- If True, collects initial, peak, and final memory usage of each Task. These data will be output to a csv file in the cache. Can have high overhead if you allocate a lot of small objects
-* profiling -- If True, executes line_profiling on all of the tasks in your Pipeline which gives timing results line by line for the function. 
-
-By default all of these parameters are set to false, but we can test what happens if they are `True` with 
+While `rerun` is the only keyword argument for individual decorators. ndustria `Pipelines` have a number of kwargs that can help you configure the run. By default all of these parameters are set to false, but we can experiment with setting them `True` in `pipeline_kwargs.py`. 
 
 ```
 python pipeline_kwargs.py
-
 ```
 
-<!-- Let's say you have a section of code that runs for a long time located at the top
-of your analysis pipeline such that everything downstream of that code has to wait
-for it. 
-
-A common example would be filtering a large dataset for a small subset of data. 
-```
-# this takes a long time to run, 
-small_subset = filterLargeDataset(path_to_dataset, filter_parameters)
-```
-ndustria implements a wrapper for long-running code that saves the result of that 
-work and reuses and recycles it wherever it's needed. 
-
-Here's what wrapping your code looks like
-```
-from ndustria import Pipeline # <-- 1. should be the only import you need
-
-pipe = Pipeline() # <-- 2. Create a new Pipeline
-
-@pipe.AddFunction() # <-- 3. function decorator adds functions to the pipeline
-def filterLargeTask(path_to_dataset, filter_parameters): # <-- 4. wrapper function surrounds your long-running task
-
-    # this takes a long time to run, 
-    small_subset = filterLargeDataset(path_to_dataset, filter_parameters)
-
-    return small_subset #<-- 5. save your work to disk by adding it to the return statement
-```
-
-First, wrap your long-running code in a python function and have that function
-return the data object you want saved and recalled. 
-
-Then add `@pipe.AddFunction` above your function to add it to the Pipeline.
-
-Whenever you want to execute your function, just call it and then call `pipe.run()`
+### name
+The name kwarg can be used to "name" the Pipeline you create. If left blank, it will be derived from the filename of the Pipeline's script.  
 
 ```
-filterLargeTask(path_to_dataset, filter_parameters) # <-- does not actually run the code, just sets it up to run later
-
-pipe.run() # <-- actually executes the code
+pipe = Pipeline(name = "kwargs")
 ```
 
-Presumably we want to do something with this data. In order to recall the data from disk, 
-we assign the result of `filterLargeTask` to a variable and pass it along to the next stage 
-of the pipeline. 
+### dryrun 
+When True, dryrun skips running Tasks but does everything else, including creating log files. Used to test complex pipelines
 
 ```
-@pipe.AddFunction()
-def analyzeTheData(the_data)
+pipe = Pipeline(name = "kwargs", dryrun = True)
+```
 
-    return Analyze(the_data)
+However, dryrun makes all of the other kwargs much less meaningful so it will not be used further in the example. 
 
-my_data = filterLargeTask(path_to_dataset, filter_parameters) # <-- does not actually run the code, just sets it up to run later
-analyzeTheData(my_data) # <-- still haven't run anything yet, just getting set up
+### parallel
+If True, the parallel kwarg uses a round robin approach to assign Tasks to multiple processes and runs them in parallel. To fully utilize the parallel kwarg we must execute the script with `mpirun` and assign a number of processors to the script. 
 
-pipe.run() # <-- skips filterLargeTask, loads the last result it produced from the file system, executes analyzeTheData with the recalled data
-``` -->
+For example if we set:
+```
+pipe = Pipeline(name = "kwargs", parallel = True)
+```
+
+We must also run: 
+
+```
+mpirun -n 4 python pipeline_kwargs.py 
+```
+
+The output should look something like this:
+
+```
+[Added Task] matrix_multiplication(N=1024)
+[Added Task] matrix_parameters(matrix_multiplication(N=1024))
+[Added Task] matrix_multiplication(N=2048)
+[Added Task] matrix_parameters(matrix_multiplication(N=2048))
+[Added Task] matrix_multiplication(N=4096)
+[Added Task] matrix_parameters(matrix_multiplication(N=4096))
+[Added Task] matrix_multiplication(N=8192)
+[Added Task] matrix_parameters(matrix_multiplication(N=8192))
+[Added Task] matrix_multiplication(N=16384)
+[Added Task] matrix_parameters(matrix_multiplication(N=16384))
+Initializing parallel run with 4 processes
+---
+ Starting a run with 10 tasks.
+---
+
+[Rank 0] running: matrix_multiplication(N=1024)
+[Rank 2] running: matrix_multiplication(N=4096)
+[Rank 3] running: matrix_multiplication(N=8192)
+[Rank 1] running: matrix_multiplication(N=2048)
+Saved result of matrix_multiplication(N=1024) to /home/kenzerkay/.ndustria_cache/56c6f56aa673d1699f3e6a8bfe12410f
+[Rank 0] running: matrix_multiplication(N=16384)
+Saved result of matrix_multiplication(N=2048) to /home/kenzerkay/.ndustria_cache/d47090ac5456be3b9d88338994375e93
+Saved result of matrix_multiplication(N=4096) to /home/kenzerkay/.ndustria_cache/48f31c91db8a3343f81b18d15f3e5ac6
+.
+.
+.
+```
+
+Here ndustria handles for you distributing different tasks to different processes. ndustria will only run a task once all of the dependent tasks have been run. 
+
+**Note:** Even if some of the things *appear* out of order in the terminal stream, ndustria *is* in fact running things correctly in its pred-defined order. Any outputs (writing to file, creating graphs, etc) will be in their proper order once completed.
+
+### timeit 
+The timeit kwarg, when set to True, keeps track of wallclock time of each Task. These data will be output to a csv file in the cache and a quick and easy graph can be generated by running `ndustria -t <name of script>` in the terminal 
+
+We can add this to the script: 
+```
+pipe = Pipeline(name = "kwargs", parallel = True, timeit = True)
+```
+
+Run in the terminal: 
+```
+ndustria -t kwargs
+```
+
+**Note:** If have already run the script before with and set `timeit = True` this *does not* automatically `rerun` all of tasks. So if a task has already been cached you are timing the time to read the results from disk which should be essentially zero. If you want to time each function "un-cached" you should set `rerun=True` for the functions that you want to time.   
+
+### profiling
+
+ndustria utilizes the package [Line Profiler](https://kernprof.readthedocs.io/en/latest/) which can look at the time utilization line by line for Tasks. This has a much higher over-head than `timeit` but produces a lot more data &mdash; not just which function takes up the most time, but which *line* in that function takes the most time. Line Profiling can be turned on with `profiling=True` and this creates a text file in the cache directory which can be accessed with `ndustria -p <name of script>`
+
+We can add this to the script: 
+```
+pipe = Pipeline(name = "kwargs", parallel = True, timeit = True, profiling = True)
+```
+
+Run in the terminal: 
+```
+ndustria -p kwargs
+```
+
+### memcheck 
+
+memcheck, when set to True, collects initial, peak, and final memory usage of each Task. These data will be output to a csv file in the cache. Can have high overhead if you allocate a lot of small objects
+
+We can add this to the script: 
+```
+pipe = Pipeline(name = "kwargs", parallel = True, timeit = True, profiling = True, memcheck = True)
+```
+
+Run in the terminal: 
+```
+ndustria -m kwargs
+```
+
+## Shell Commands 
+
+ndustria has a number of shell commands that can help you access the metadata that ndustria generates about your pipeline. 
+
+
 
 
 

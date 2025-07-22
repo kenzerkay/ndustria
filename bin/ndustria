@@ -32,10 +32,6 @@ See the log of the last run pipeline:
 ndustria -l
 ndustria --log
 
-If you want to run all of ndustria's unit tests:
-ndustria -r
-ndustria --runtests
-
 """
 
 parser = argparse.ArgumentParser(
@@ -48,7 +44,6 @@ parser.add_argument('-t', '--timeit', action='store', type=str)
 parser.add_argument('-m', '--memcheck', action='store', type=str)
 parser.add_argument('-l', '--log', action='store_true')
 parser.add_argument('-p', '--profiling', action='store', type=str)
-parser.add_argument('-r', '--runtests', action='store_true')
 
 args = parser.parse_args()
 
