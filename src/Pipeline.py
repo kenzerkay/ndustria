@@ -1,11 +1,11 @@
-"""Defines the Pipeline class that represents the full analysis pipeline
+"""
+Defines the Pipeline class that represents the full analysis pipeline
 
-A Pipeline is a singleton object that contains a list of Tasks and a list of Views
+A Pipeline is a singleton object that contains a list of Tasks. 
 When Pipeline.run() is called, the pipeline will attempt to execute any Tasks that 
 are indicated as ready by a call to Task.readyToRun(). A Task is ready if it either
 has no dependencies, or all its dependencies have completed. 
-Once all Tasks are complete, the Pipeline will then attempt to execute all its Views. 
-Once all Views are complete, the Pipeline is done and the program will exit.
+Once all Tasks are complete, the Pipeline will exit the program.
 
 """
 

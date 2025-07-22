@@ -2,6 +2,7 @@
 
 ## ToDo:
 * Profiling in parallel
+* Clean out cache/Delete functions from cache
 
 # Main features 
 
@@ -86,7 +87,7 @@ Once you have added one or more functions to your `Pipeline()` you can use `pipe
 
 This tutorial will walk you through a set of test scripts so that you can explore the functionality of ndustria. `cd` into tests to access the test scripts 
 ```
-cd tests
+cd tutorials
 ```
 
 ## Simple Example
@@ -354,7 +355,19 @@ ndustria -m kwargs
 
 ## Shell Commands 
 
-ndustria has a number of shell commands that can help you access the metadata that ndustria generates about your pipeline. 
+ndustria has a number of shell commands that can help you access the metadata that ndustria generates about your Pipelines. We have already seen some of these (`ndustria -p <name of script>`, `ndustria -t <name of script>`, `ndustria -m <name of script>`) which can be turned on with Pipeline kwargs. However, there is more metadata that ndustria generated automatically. 
+
+### cache file 
+
+The cache file will show you all of the cached tasks you have stored in your ndustria cache directory and where that Information is stored. This is a good way to keep track of the Pipelines you have run and have not run.  
+
+```
+ndustria -c
+```
+
+### log file 
+
+The log file is a log of the most recent Pipeline run. This is a condensed version of that run which pulls out information about the processing and execution of ndustria tasks 
 
 
 

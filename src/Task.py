@@ -1,4 +1,5 @@
-"""A Task is a the smallest unit of work performed by an analysis Pipeline
+"""
+A Task is a the smallest unit of work performed by an analysis Pipeline
 
 A Task is a the smallest unit of work performed by an analysis Pipeline. 
 Tasks must be deterministic (returns a the same result for the same arguments )
@@ -335,13 +336,11 @@ class Task:
         #debug(f"Created hash {hash} for {self} from string {target}")
         return hash
     
-
     @staticmethod
     def isTask(arg):
 
         return arg.__class__.__name__ == "Task"
     
-
     @staticmethod
     def isListOfTasks(arg):
 
@@ -378,7 +377,6 @@ class Task:
         
         return parsed_arguments, parsed_kwargs
     
-
 class TaskNotReadyError(Exception):
 
     def __init__(self, task):

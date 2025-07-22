@@ -70,7 +70,7 @@ if (args.cache):
     print(cache_info)
     os.system(f"cat {cache_info}")
 
-
+# Output line profiling info for a given Pipeline
 if (args.profiling):
     script_name = os.path.basename(args.profiling).replace(".py", '')
     prof_data_file = os.path.join(cache_dir, f"{script_name}_profile.txt")
@@ -81,7 +81,7 @@ if (args.profiling):
 
     os.system(f"cat {prof_data_file}")
 
-# Output Timing info 
+# Output timing info for a given Pipeline
 if (args.timeit):
 
     script_name = os.path.basename(args.timeit).replace(".py", '')
@@ -116,6 +116,7 @@ if (args.timeit):
     plt.title("Time spent in each function")
     plt.show()
 
+# Output memory info for a given Pipeline
 if (args.memcheck):
     script_name = os.path.basename(args.memcheck).replace(".py", '')
     memcheck_data_file = os.path.join(cache_dir, f"{script_name}_memcheck.csv")
